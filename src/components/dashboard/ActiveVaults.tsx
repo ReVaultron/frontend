@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Layers, ExternalLink, MoreVertical } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Layers, ExternalLink, MoreVertical, Eye } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ const mockVaults: Vault[] = [
 ];
 
 export function ActiveVaults() {
+  const navigate = useNavigate();
   const [depositModalOpen, setDepositModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [selectedVault, setSelectedVault] = useState("");
@@ -135,7 +137,10 @@ export function ActiveVaults() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>View Details</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(`/vault/${vault.id}`)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Details
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
                       setSelectedVault(vault.pair);
