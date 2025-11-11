@@ -9,6 +9,8 @@ import Dashboard from "./pages/Index";
 import Analytics from "./pages/Analytics";
 import VaultDetails from "./pages/VaultDetails";
 import NotFound from "./pages/NotFound";
+import { AppKitProvider } from "./contexts/AppKitContext";
+import { AppContent } from "./components/app/AppContent";
 
 const queryClient = new QueryClient();
 
@@ -18,23 +20,15 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Routes with Dashboard Layout (Header + Sidebar) */}
-            <Route element={<DashboardLayout />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/vault/:id" element={<VaultDetails />} />
-            </Route>
-
-            {/* 404 Route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <AppKitProvider>
+          <AppContent />
+        </AppKitProvider>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
 
 export default App;
+
+// Re-export the context hook for backwards compatibility
+export { useAppKitContext } from "./contexts/AppKitContext";

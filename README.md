@@ -153,7 +153,7 @@ VITE_PYTH_API_KEY=your_pyth_api_key            # For direct price feeds
 # Start development server
 npm run dev
 
-# Open browser at http://localhost:5173
+# Open browser at http://localhost:8080
 ```
 
 ### Build for Production
@@ -532,7 +532,7 @@ npm run test:e2e:headed
 import { test, expect } from '@playwright/test';
 
 test('user can create a vault', async ({ page }) => {
-  await page.goto('http://localhost:5173');
+  await page.goto('http://localhost:8080');
   
   // Connect wallet (mock)
   await page.click('text=Connect Wallet');

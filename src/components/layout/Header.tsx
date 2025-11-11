@@ -1,7 +1,7 @@
 import { Shield, Menu } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ThemeToggle } from "../ThemeToggle";
-import { WalletConnect } from "../WalletConnect";
+import { WalletButton } from "../wallet/WalletButton";
 
 interface DashboardHeaderProps {
   onMenuClick: () => void;
@@ -34,7 +34,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
         {/* Right: Theme Toggle + Wallet */}
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <WalletConnect />
+          <WalletButton />
         </div>
       </div>
     </header>
