@@ -9,25 +9,25 @@ All colors MUST be HSL.
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 270 50% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 270 50% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 270 50% 20%;
 
-    --primary: 243 75% 59%;
+    --primary: 270 70% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 270 60% 95%;
+    --secondary-foreground: 270 50% 20%;
 
-    --muted: 220 13% 95%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 270 40% 96%;
+    --muted-foreground: 270 20% 50%;
 
-    --accent: 220 13% 95%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 280 65% 55%;
+    --accent-foreground: 0 0% 100%;
 
     --success: 158 64% 52%;
     --success-foreground: 0 0% 100%;
@@ -38,17 +38,17 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 243 75% 59%;
+    --border: 270 30% 90%;
+    --input: 270 30% 90%;
+    --ring: 270 70% 60%;
 
     --radius: 0.75rem;
 
-    --chart-1: 243 75% 59%;
-    --chart-2: 158 64% 52%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 0 84% 60%;
-    --chart-5: 271 81% 56%;
+    --chart-1: 270 70% 60%;
+    --chart-2: 280 65% 55%;
+    --chart-3: 260 60% 65%;
+    --chart-4: 290 55% 50%;
+    --chart-5: 250 70% 58%;
 
     --sidebar-background: 0 0% 98%;
 
@@ -124,7 +124,11 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  body {
+body {
     @apply bg-background text-foreground;
+  }
+  
+  html {
+    scroll-behavior: smooth;
   }
 }

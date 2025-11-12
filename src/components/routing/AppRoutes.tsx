@@ -7,14 +7,15 @@ import { DashboardLayout } from "../layout/Layout";
 import Dashboard from "../../pages/Index";
 import Analytics from "@/pages/Analytics";
 import VaultDetails from "@/pages/VaultDetails";
+import Landing from "@/pages/Landing";
 
 export const AppRoutes: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
         {/* Routes with Dashboard Layout (Header + Sidebar) */}
+        <Route path="/" element={<Landing />} />
         <Route element={<DashboardLayout />}>
-          <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/vault/:id" element={<VaultDetails />} />
