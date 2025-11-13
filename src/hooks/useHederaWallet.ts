@@ -68,19 +68,6 @@ export const SUPPORTED_NETWORKS: Record<number, NetworkInfo> = {
     rpcUrls: ["https://sepolia.base.org"],
     blockExplorerUrls: ["https://sepolia-explorer.base.org"],
   },
-  // Polygon zkEVM Mainnet
-  1101: {
-    chainId: 1101,
-    name: "Polygon zkEVM",
-    shortName: "zkEVM",
-    nativeCurrency: {
-      name: "Ether",
-      symbol: "ETH",
-      decimals: 18,
-    },
-    rpcUrls: ["https://zkevm-rpc.com"],
-    blockExplorerUrls: ["https://zkevm.polygonscan.com"],
-  },
   // Hedera Mainnet
   295: {
     chainId: 295,
@@ -106,32 +93,6 @@ export const SUPPORTED_NETWORKS: Record<number, NetworkInfo> = {
     },
     rpcUrls: ["https://testnet.hashio.io/api"],
     blockExplorerUrls: ["https://hashscan.io/testnet"],
-  },
-  // Rootstock Mainnet
-  30: {
-    chainId: 30,
-    name: "Rootstock Mainnet",
-    shortName: "RSK",
-    nativeCurrency: {
-      name: "Smart Bitcoin",
-      symbol: "RBTC",
-      decimals: 18,
-    },
-    rpcUrls: ["https://public-node.rsk.co"],
-    blockExplorerUrls: ["https://explorer.rsk.co"],
-  },
-  // Rootstock Testnet
-  31: {
-    chainId: 31,
-    name: "Rootstock Testnet",
-    shortName: "RSK Testnet",
-    nativeCurrency: {
-      name: "Smart Bitcoin Testnet",
-      symbol: "tRBTC",
-      decimals: 18,
-    },
-    rpcUrls: ["https://public-node.testnet.rsk.co"],
-    blockExplorerUrls: ["https://explorer.testnet.rsk.co"],
   },
 };
 
@@ -390,8 +351,8 @@ export const useWallet = () => {
     return getNetworkInfo();
   }, [getNetworkInfo]);
 
-  const isMainnet = walletState.chainId === 1 || walletState.chainId === 295 || walletState.chainId === 30;
-  const isTestnet = [11155111, 84532, 296, 31].includes(walletState.chainId || 0);
+  const isMainnet = walletState.chainId === 1 || walletState.chainId === 295;
+  const isTestnet = [11155111, 84532, 296].includes(walletState.chainId || 0);
 
   const supportedNetworks = SUPPORTED_NETWORKS;
 

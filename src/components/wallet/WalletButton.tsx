@@ -8,8 +8,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Wallet, ChevronDown, User, BarChart3 } from "lucide-react";
+import { Wallet, ChevronDown, User, BarChart3, Network } from "lucide-react";
 import { useWallet } from "@/hooks/useHederaWallet";
+import { NetworkSwitcher } from "./NetworkSwitcher";
 
 interface WalletButtonProps {
   className?: string;
@@ -70,6 +71,11 @@ export const WalletButton: React.FC<WalletButtonProps> = ({ className }) => {
             </a>
           </DropdownMenuItem> */}
           <DropdownMenuSeparator />
+          <DropdownMenuItem
+            // onClick={() => window.open(`https://hashscan.io/${getNetworkName().toLowerCase()}/account/${address}`, "_blank")}
+          >
+           <NetworkSwitcher />
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => navigator.clipboard.writeText(address || "")}
           >

@@ -2,28 +2,25 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { DashboardLayout } from "@/components/layout/Layout";
-import Dashboard from "./pages/Index";
-import Analytics from "./pages/Analytics";
-import VaultDetails from "./pages/VaultDetails";
-import NotFound from "./pages/NotFound";
 import { AppKitProvider } from "./contexts/AppKitContext";
 import { AppContent } from "./components/app/AppContent";
+import { Web3Provider } from "./components/provider/Web3Provider";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AppKitProvider>
-          <AppContent />
-        </AppKitProvider>
-      </TooltipProvider>
+      <Web3Provider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AppKitProvider>
+            <AppContent />
+          </AppKitProvider>
+        </TooltipProvider>
+      </Web3Provider>
     </ThemeProvider>
   </QueryClientProvider>
 );

@@ -1,48 +1,81 @@
+// components/dashboard/QuickActions.tsx
 import { useState } from "react";
-import { Plus, ArrowDownToLine, Zap, Activity } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { VaultCreationWizard } from "@/components/vault/VaultCreationWizard";
+import { VaultActionsModal } from "../vault/VaultActionsModal";
+import { useVolatilityIndexData, useUserVaultData } from "@/hooks/useContracts";
+import { CONTRACT_ADDRESSES } from "@/lib/contracts/abis";
 
 export function QuickActions() {
-  const [createVaultOpen, setCreateVaultOpen] = useState(false);
+  const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const { refetchVolatility } = useVolatilityIndexData();
+  const { needsRebalancing } = useUserVaultData(CONTRACT_ADDRESSES.USER_VAULT);
+
+  const actions = [
+    {
+      label: "+ Deposit",
+      primary: true,
+      onClick: () => setIsDepositOpen(true),
+    },
+    {
+      label: "Withdraw",
+      primary: false,
+      onClick: () => setIsWithdrawOpen(true),
+    },
+    {
+      label: "Harvest Fees",
+      primary: false,
+      onClick: () => console.log("Harvest Fees clicked"),
+      disabled: true, // TODO: Implement
+    },
+    {
+      label: needsRebalancing ? "🔄 Rebalance Now" : "Check IL Risk",
+      primary: false,
+      onClick: () => refetchVolatility(),
+      badge: needsRebalancing ? "Action Required" : undefined,
+    },
+  ];
 
   return (
     <>
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <Button 
-            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-            onClick={() => setCreateVaultOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Vault
-          </Button>
-          <Button variant="outline" className="w-full">
-            <ArrowDownToLine className="h-4 w-4 mr-2" />
-            Deposit
-          </Button>
-          <Button variant="outline" className="w-full">
-            <Zap className="h-4 w-4 mr-2" />
-            Rebalance
-          </Button>
-          <Button variant="outline" className="w-full">
-            <Activity className="h-4 w-4 mr-2" />
-            Check Status
-          </Button>
+      <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {actions.map((action) => (
+            <button
+              key={action.label}
+              onClick={action.onClick}
+              disabled={action.disabled}
+              className={`relative ${
+                action.primary
+                  ? "px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg shadow-blue-500/30"
+                  : "px-6 py-3 bg-muted text-foreground rounded-lg font-medium hover:bg-muted/80 transition-all"
+              } ${action.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              {action.label}
+              {action.badge && (
+                <span className="absolute -top-2 -right-2 px-2 py-0.5 bg-red-600 text-white text-xs rounded-full">
+                  {action.badge}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
-      </Card>
+      </div>
 
-      <Dialog open={createVaultOpen} onOpenChange={setCreateVaultOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Vault</DialogTitle>
-          </DialogHeader>
-          <VaultCreationWizard onComplete={() => setCreateVaultOpen(false)} />
-        </DialogContent>
-      </Dialog>
+      {/* Modals */}
+      <VaultActionsModal
+        isOpen={isDepositOpen}
+        onClose={() => setIsDepositOpen(false)}
+        action="deposit"
+        vaultAddress={CONTRACT_ADDRESSES.USER_VAULT}
+      />
+
+      <VaultActionsModal
+        isOpen={isWithdrawOpen}
+        onClose={() => setIsWithdrawOpen(false)}
+        action="withdraw"
+        vaultAddress={CONTRACT_ADDRESSES.USER_VAULT}
+      />
     </>
   );
 }

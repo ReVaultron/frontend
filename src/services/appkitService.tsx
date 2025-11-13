@@ -57,7 +57,7 @@ export const initializeAppKit = async (): Promise<AppKitInitResult> => {
   const hederaEVMAdapter = new HederaAdapter({
     projectId: PROJECT_ID,
     networks: [
-      HederaChainDefinition.EVM.Mainnet,
+      // HederaChainDefinition.EVM.Mainnet,
       HederaChainDefinition.EVM.Testnet,
     ],
     namespace: "eip155",
@@ -67,7 +67,7 @@ export const initializeAppKit = async (): Promise<AppKitInitResult> => {
   const hederaNativeAdapter = new HederaAdapter({
     projectId: PROJECT_ID,
     networks: [
-      HederaChainDefinition.Native.Mainnet,
+      // HederaChainDefinition.Native.Mainnet,
       HederaChainDefinition.Native.Testnet,
     ],
     namespace: hederaNamespace,

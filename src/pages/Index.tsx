@@ -5,8 +5,20 @@ import { VolatilityMonitor } from "@/components/dashboard/VolatilityMonitor";
 import { PerformanceCard } from "@/components/dashboard/PerformanceCard";
 import { ActiveVaults } from "@/components/dashboard/ActiveVaults";
 import { AgentActivityFeed } from "@/components/agents/AgentActivityFeed";
+import { useVaultWithVolatility } from "@/hooks/useContracts";
+import { CONTRACT_ADDRESSES } from "@/lib/contracts/abis";
 
 const Dashboard = () => {
+  const vaultData = useVaultWithVolatility(CONTRACT_ADDRESSES.USER_VAULT);
+
+  // Calculate change percentages (mock for now)
+  const changes = {
+    deposited: 12.5,
+    value: 2.8,
+    fees: 8.4,
+    volatility: -1.1,
+  };
+
   return (
     <div className="flex-1 p-6 space-y-6 max-w-[1600px] mx-auto">
       {/* Page Header */}
@@ -21,29 +33,29 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Total Deposited"
-          value="$125.0K"
-          change={12.5}
+          value={`${Number(vaultData.totalValue).toFixed(2)}`}
+          change={changes.deposited}
           icon={DollarSign}
           iconColor="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300"
         />
         <MetricCard
           title="Current Value"
-          value="$128.5K"
-          change={2.8}
+          value={`${Number(vaultData.totalValue).toFixed(2)}`}
+          change={changes.value}
           icon={TrendingUp}
           iconColor="bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300"
         />
         <MetricCard
           title="Fees Earned"
           value="$4.2K"
-          change={8.4}
+          change={changes.fees}
           icon={Zap}
           iconColor="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300"
         />
         <MetricCard
           title="Current Volatility"
-          value="3.2%"
-          change={1.1}
+          value={`${vaultData.currentVolatility.toFixed(1)}%`}
+          change={changes.volatility}
           icon={AlertTriangle}
           iconColor="bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300"
         />
@@ -55,7 +67,10 @@ const Dashboard = () => {
       {/* Volatility Monitor & Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <VolatilityMonitor threshold={5.0} />
+          <VolatilityMonitor 
+            threshold={vaultData.volatilityThreshold} 
+            currentVolatility={vaultData.currentVolatility} 
+          />
         </div>
         <PerformanceCard />
       </div>
@@ -85,7 +100,10 @@ const Dashboard = () => {
           </span>
         </div>
         <div className="text-sm text-muted-foreground">
-          Last updated: <span className="font-medium text-foreground">2 min ago</span>
+          Last updated:{" "}
+          <span className="font-medium text-foreground">
+            {new Date(vaultData.lastUpdate * 1000).toLocaleTimeString()}
+          </span>
         </div>
       </div>
     </div>
