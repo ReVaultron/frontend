@@ -84,14 +84,14 @@ export function ActiveVaults() {
           </div>
 
           {/* Token List */}
-          {vaultData.tokens.length > 0 ? (
+          {Array.isArray(vaultData.tokens) && vaultData.tokens.length > 0 ? (
             <div className="mb-4 p-4 bg-muted/30 rounded-lg">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-medium text-foreground">Supported Tokens</p>
                 <p className="text-xs text-muted-foreground">{vaultData.tokenCount} total</p>
               </div>
               <div className="space-y-2">
-                {vaultData.tokens.slice(0, 3).map((token, index) => (
+                {vaultData.tokens.slice(0, 3).map((token: string, index: number) => (
                   <div key={index} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full"></div>
@@ -164,7 +164,7 @@ export function ActiveVaults() {
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Owner</span>
               <span className="font-mono text-xs">
-                {vaultData.owner ? `${vaultData.owner.slice(0, 6)}...${vaultData.owner.slice(-4)}` : 'Loading...'}
+                {vaultData.owner && typeof vaultData.owner === 'string' ? `${vaultData.owner.slice(0, 6)}...${vaultData.owner.slice(-4)}` : 'Loading...'}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm mt-2">

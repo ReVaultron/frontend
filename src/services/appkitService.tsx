@@ -83,7 +83,7 @@ export const initializeAppKit = async (): Promise<AppKitInitResult> => {
     projectId: PROJECT_ID,
     metadata,
     networks: allNetworks as [(typeof allNetworks)[0], ...typeof allNetworks],
-    defaultNetwork: mainnet, // Set default network
+    defaultNetwork: HederaChainDefinition.EVM.Testnet, // Set default network
     ...appKitTheme,
   });
 

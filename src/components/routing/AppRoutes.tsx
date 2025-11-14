@@ -8,6 +8,7 @@ import Dashboard from "../../pages/Index";
 import Analytics from "@/pages/Analytics";
 import VaultDetails from "@/pages/VaultDetails";
 import Landing from "@/pages/Landing";
+import Vaults from "@/pages/Vaults";
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -17,6 +18,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="/" element={<Landing />} />
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/vaults" element={<Vaults />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/vault/:id" element={<VaultDetails />} />
         </Route>

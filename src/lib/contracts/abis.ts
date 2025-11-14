@@ -1,5 +1,244 @@
 // lib/contracts/abis.ts
 
+// FactoryVault Contract ABI (Complete)
+export const FACTORY_VAULT_ABI = [
+  {
+    type: "constructor",
+    stateMutability: "undefined",
+    payable: false,
+    inputs: [{ type: "uint256", name: "_creationFee" }],
+  },
+  {
+    type: "error",
+    name: "OwnableInvalidOwner",
+    inputs: [{ type: "address", name: "owner" }],
+  },
+  {
+    type: "error",
+    name: "OwnableUnauthorizedAccount",
+    inputs: [{ type: "address", name: "account" }],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "CreationFeeUpdated",
+    inputs: [
+      { type: "uint256", name: "oldFee", indexed: false },
+      { type: "uint256", name: "newFee", indexed: false },
+      { type: "uint256", name: "timestamp", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "FeesWithdrawn",
+    inputs: [
+      { type: "address", name: "to", indexed: true },
+      { type: "uint256", name: "amount", indexed: false },
+      { type: "uint256", name: "timestamp", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "OwnershipTransferred",
+    inputs: [
+      { type: "address", name: "previousOwner", indexed: true },
+      { type: "address", name: "newOwner", indexed: true },
+    ],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "VaultCreated",
+    inputs: [
+      { type: "address", name: "user", indexed: true },
+      { type: "address", name: "vault", indexed: true },
+      { type: "uint256", name: "timestamp", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "VaultRemoved",
+    inputs: [
+      { type: "address", name: "user", indexed: true },
+      { type: "address", name: "vault", indexed: true },
+      { type: "uint256", name: "timestamp", indexed: false },
+    ],
+  },
+  {
+    type: "function",
+    name: "allVaults",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [{ type: "uint256", name: "" }],
+    outputs: [{ type: "address", name: "" }],
+  },
+  {
+    type: "function",
+    name: "createVault",
+    constant: false,
+    stateMutability: "payable",
+    payable: true,
+    inputs: [],
+    outputs: [{ type: "address", name: "" }],
+  },
+  {
+    type: "function",
+    name: "getAllVaults",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "address[]", name: "vaults" }],
+  },
+  {
+    type: "function",
+    name: "getBalance",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "uint256", name: "balance" }],
+  },
+  {
+    type: "function",
+    name: "getCreationFee",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "uint256", name: "fee" }],
+  },
+  {
+    type: "function",
+    name: "getVault",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [{ type: "address", name: "user" }],
+    outputs: [{ type: "address", name: "vaultAddress" }],
+  },
+  {
+    type: "function",
+    name: "getVaultCount",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "uint256", name: "count" }],
+  },
+  {
+    type: "function",
+    name: "getVaults",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [
+      { type: "uint256", name: "offset" },
+      { type: "uint256", name: "limit" },
+    ],
+    outputs: [{ type: "address[]", name: "vaults" }],
+  },
+  {
+    type: "function",
+    name: "hasVault",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [{ type: "address", name: "user" }],
+    outputs: [{ type: "bool", name: "" }],
+  },
+  {
+    type: "function",
+    name: "isValidVault",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [{ type: "address", name: "vault" }],
+    outputs: [{ type: "bool", name: "valid" }],
+  },
+  {
+    type: "function",
+    name: "isVault",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [{ type: "address", name: "" }],
+    outputs: [{ type: "bool", name: "" }],
+  },
+  {
+    type: "function",
+    name: "owner",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "address", name: "" }],
+  },
+  {
+    type: "function",
+    name: "removeVault",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "address", name: "user" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "renounceOwnership",
+    constant: false,
+    payable: false,
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "setCreationFee",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "uint256", name: "newFee" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "transferOwnership",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "address", name: "newOwner" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "userVaults",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [{ type: "address", name: "" }],
+    outputs: [{ type: "address", name: "" }],
+  },
+  {
+    type: "function",
+    name: "vaultCreationFee",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "uint256", name: "" }],
+  },
+  {
+    type: "function",
+    name: "withdrawFees",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "address", name: "to" }],
+    outputs: [],
+  },
+  { type: "receive", stateMutability: "payable" },
+] as const;
+
 // UserVault Contract ABI (Complete)
 export const USER_VAULT_ABI = [
   {
@@ -781,20 +1020,26 @@ export const VOLATILITY_INDEX_ABI = [
 
 export const PRICE_FEED_IDS = {
   // HBAR/USD - Hedera
-  HBAR_USD: "0xf2ef5dc6156e6cdccda6c315f3fc6de2bf37e9aecbc9b5efc51de98096c3e7c6" as `0x${string}`,
-  
+  HBAR_USD:
+    "0xf2ef5dc6156e6cdccda6c315f3fc6de2bf37e9aecbc9b5efc51de98096c3e7c6" as `0x${string}`,
+
   // Alternative major pairs (for reference)
-  BTC_USD: "0xf9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b" as `0x${string}`,
-  ETH_USD: "0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6" as `0x${string}`,
-  WETH_USD: "0x86d196443d86a992f6c4ce38779cdfa36b649e43052ef8bedbe0b503029a94c2" as `0x${string}`,
-  USDC_USD: "0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722" as `0x${string}`,
+  BTC_USD:
+    "0xf9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b" as `0x${string}`,
+  ETH_USD:
+    "0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6" as `0x${string}`,
+  WETH_USD:
+    "0x86d196443d86a992f6c4ce38779cdfa36b649e43052ef8bedbe0b503029a94c2" as `0x${string}`,
+  USDC_USD:
+    "0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722" as `0x${string}`,
 } as const;
 
 // Default price feed ID for the app (HBAR/USD)
 export const DEFAULT_PRICE_FEED_ID = PRICE_FEED_IDS.HBAR_USD;
 // Contract addresses
 export const CONTRACT_ADDRESSES = {
-  USER_VAULT: "0xaffc3a3822636804fb5ea3ffaff478b6a2023cd7" as `0x${string}`, // 0.0.7213953
+  FACTORY_VAULT: "0x82637654c32994c938a41ba0095123b9053edd7d" as `0x${string}`, // 0.0.7247187
+  USER_VAULT: "0x3542b3ed6c2d124814361d60d2a00ac188ceae7b" as `0x${string}`, // 0.0.7247188
   VOLATILITY_INDEX:
     "0xfc982a861622997f2068921e38f753eee6be0dde" as `0x${string}`, // 0.0.7213992
 } as const;

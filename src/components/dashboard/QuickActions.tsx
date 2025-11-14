@@ -1,16 +1,24 @@
 // components/dashboard/QuickActions.tsx
 import { useState } from "react";
-import { VaultActionsModal } from "../vault/VaultActionsModal";
 import { useVolatilityIndexData, useUserVaultData } from "@/hooks/useContracts";
 import { CONTRACT_ADDRESSES } from "@/lib/contracts/abis";
+import { DepositModal } from "../vault/DepositModal";
+import { WithdrawModal } from "../vault/WithdrawModal";
 
 export function QuickActions() {
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const { refetchVolatility } = useVolatilityIndexData();
-  const { needsRebalancing } = useUserVaultData(CONTRACT_ADDRESSES.USER_VAULT);
+  const vaultData = useUserVaultData(CONTRACT_ADDRESSES.USER_VAULT);
+  const needsRebalancing = false; // TODO: Implement rebalancing logic
 
+  console.log('vaultData', vaultData)
   const actions = [
+    // {
+    //   label: "Create Vault",
+    //   primary: false,
+    //   onClick: () => console.log("Create Vault clicked"),
+    // },
     {
       label: "+ Deposit",
       primary: true,
@@ -63,18 +71,18 @@ export function QuickActions() {
       </div>
 
       {/* Modals */}
-      <VaultActionsModal
-        isOpen={isDepositOpen}
-        onClose={() => setIsDepositOpen(false)}
-        action="deposit"
+      <DepositModal
+        open={isDepositOpen}
+        onOpenChange={() => setIsDepositOpen(false)}
         vaultAddress={CONTRACT_ADDRESSES.USER_VAULT}
+        vaultName="My User Vault"
       />
 
-      <VaultActionsModal
-        isOpen={isWithdrawOpen}
-        onClose={() => setIsWithdrawOpen(false)}
-        action="withdraw"
+      <WithdrawModal
+        open={isWithdrawOpen}
+        onOpenChange={() => setIsWithdrawOpen(false)}
         vaultAddress={CONTRACT_ADDRESSES.USER_VAULT}
+        vaultName="My User Vault"
       />
     </>
   );

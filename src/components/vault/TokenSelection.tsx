@@ -12,8 +12,6 @@ const AVAILABLE_TOKENS = [
   { id: "HBAR", name: "HBAR", description: "Hedera Native Token" },
   { id: "USDC", name: "USDC", description: "USD Coin Stablecoin" },
   { id: "SAUCE", name: "SAUCE", description: "SaucerSwap Token" },
-  { id: "KARATE", name: "KARATE", description: "Karate Combat Token" },
-  { id: "HSUITE", name: "HSUITE", description: "HashPack Suite Token" },
 ];
 
 export function TokenSelection({ config, updateConfig }: TokenSelectionProps) {

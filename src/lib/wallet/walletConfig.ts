@@ -66,13 +66,8 @@ export const evmNetworks = [
   mainnet,
   sepolia,
   baseSepolia,
-  polygonZkEvm,
   hederaMainnet,
   hederaTestnet,
-  rootstock,
-  rootstockTestnet,
-  polygon,
-  base,
 ];
 
 export const hederaNativeNetworks = [

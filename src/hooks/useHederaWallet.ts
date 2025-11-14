@@ -232,10 +232,10 @@ export const useWallet = () => {
 
           // If the network doesn't exist, try to add it (error code 4902)
           if (
-            typeof switchError === "object" &&
-            switchError !== null &&
-            "code" in switchError &&
-            (switchError as { code: number }).code === 4902 ||
+            (typeof switchError === "object" &&
+              switchError !== null &&
+              "code" in switchError &&
+              (switchError as { code: number }).code === 4902) ||
             (switchError as { code: number }).code === -32603
           ) {
             try {
@@ -313,7 +313,12 @@ export const useWallet = () => {
         console.error("❌ Network switch failed completely:", error);
 
         let errorMessage = "Failed to switch network";
-        if (error && typeof error === "object" && "message" in error && typeof (error as { message?: string }).message === "string") {
+        if (
+          error &&
+          typeof error === "object" &&
+          "message" in error &&
+          typeof (error as { message?: string }).message === "string"
+        ) {
           errorMessage = (error as { message: string }).message;
         }
 
