@@ -5,8 +5,6 @@ import {
   useUserVaultData,
   useUserVaultAddress,
 } from "@/hooks/useContracts";
-import { CONTRACT_ADDRESSES } from "@/lib/contracts/abis";
-import { DepositModal } from "../vault/DepositModal";
 import { useAccount } from "wagmi";
 import { HBARDepositModal } from "../vault/HBARDepositModal";
 import { HBARWithdrawModal } from "../vault/HBARWithdrawModal";
