@@ -123,8 +123,8 @@ const Dashboard = () => {
         <div className="lg:col-span-2">
           <VolatilityMonitor
             threshold={vaultData.volatilityThreshold}
-            currentVolatility={vaultData.currentVolatility}
-            isStale={vaultData.isStale}
+            // currentVolatility={vaultData.currentVolatility}
+            // isStale={vaultData.isStale}
           />
         </div>
         <PerformanceCard />

@@ -82,8 +82,8 @@ export const SUPPORTED_NETWORKS: Record<number, NetworkInfo> = {
     blockExplorerUrls: ["https://hashscan.io"],
   },
   // Hedera Testnet
-  296: {
-    chainId: 296,
+  0x128: {
+    chainId: 0x128,
     name: "Hedera Testnet",
     shortName: "Hedera Testnet",
     nativeCurrency: {
@@ -357,7 +357,7 @@ export const useWallet = () => {
   }, [getNetworkInfo]);
 
   const isMainnet = walletState.chainId === 1 || walletState.chainId === 295;
-  const isTestnet = [11155111, 84532, 296].includes(walletState.chainId || 0);
+  const isTestnet = [11155111, 84532, 0x128].includes(walletState.chainId || 0);
 
   const supportedNetworks = SUPPORTED_NETWORKS;
 

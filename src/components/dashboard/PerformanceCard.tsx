@@ -1,12 +1,15 @@
 // components/dashboard/PerformanceCard.tsx
 import { TrendingUp } from "lucide-react";
-import { useUserVaultData, useUserVaultEvents } from "@/hooks/useContracts";
+import { useUserVaultAddress, useUserVaultData, useUserVaultEvents } from "@/hooks/useContracts";
 import { CONTRACT_ADDRESSES } from "@/lib/contracts/abis";
 import { useMemo } from "react";
+import { useAccount } from "wagmi";
 
 export function PerformanceCard() {
-  const vaultData = useUserVaultData(CONTRACT_ADDRESSES.USER_VAULT);
-  const { tokenReceived, tokenWithdrawn } = useUserVaultEvents(CONTRACT_ADDRESSES.USER_VAULT);
+  const { address: userAddress, isConnected } = useAccount();
+   const { vaultAddress, hasVault } = useUserVaultAddress(userAddress);
+   const vaultData = useUserVaultData(vaultAddress);
+  const { tokenReceived, tokenWithdrawn } = useUserVaultEvents(vaultAddress);
 
   // Calculate metrics
   const metrics = useMemo(() => {

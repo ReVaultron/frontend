@@ -1039,7 +1039,7 @@ export const DEFAULT_PRICE_FEED_ID = PRICE_FEED_IDS.HBAR_USD;
 // Contract addresses
 export const CONTRACT_ADDRESSES = {
   FACTORY_VAULT: "0x82637654c32994c938a41ba0095123b9053edd7d" as `0x${string}`, // 0.0.7247187
-  USER_VAULT: "0x3542b3ed6c2d124814361d60d2a00ac188ceae7b" as `0x${string}`, // 0.0.7247188
+  // USER_VAULT: "0x3542b3ed6c2d124814361d60d2a00ac188ceae7b" as `0x${string}`, // 0.0.7247188
   VOLATILITY_INDEX:
     "0xfc982a861622997f2068921e38f753eee6be0dde" as `0x${string}`, // 0.0.7213992
 } as const;
