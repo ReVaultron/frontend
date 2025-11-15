@@ -8,16 +8,15 @@ const ERC20_ABI = [
   // symbol()
   "function symbol() view returns (string)"
 ];
+const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
 
 
 export async function fetchHBARBalance(address: string) {
-  const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
   const bal = await provider.getBalance(address);
   return ethers.formatEther(bal);
 }
 
 export async function fetchERC20Balance(token: string, user: string) {
-  const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
   const contract = new ethers.Contract(token, ERC20_ABI, provider);
 
   const bal = await contract.balanceOf(user);

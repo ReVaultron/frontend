@@ -23,7 +23,7 @@ export interface ValidationResult {
 /**
  * Validate HBAR deposit amount
  */
-export function useHBARDepositValidation(vaultAddress?: Address) {
+export function useHBARDepositValidation() {
   const { address } = useAccount();
   const { data: walletBalance } = useBalance({ address });
 
@@ -53,7 +53,10 @@ export function useHBARDepositValidation(vaultAddress?: Address) {
       if (amountInTinybars > MAX_INT64) {
         return {
           isValid: false,
-          error: `Amount exceeds maximum value (${formatUnits(MAX_INT64, HBAR_DECIMALS)} HBAR)`,
+          error: `Amount exceeds maximum value (${formatUnits(
+            MAX_INT64,
+            HBAR_DECIMALS
+          )} HBAR)`,
         };
       }
     } catch (err) {
@@ -62,7 +65,9 @@ export function useHBARDepositValidation(vaultAddress?: Address) {
 
     // Check wallet balance
     if (walletBalance) {
-      const walletHBAR = parseFloat(formatUnits(walletBalance.value, ETH_DECIMALS));
+      const walletHBAR = parseFloat(
+        formatUnits(walletBalance.value, ETH_DECIMALS)
+      );
       const gasReserve = 0.1; // Reserve for gas
 
       if (amountNum > walletHBAR) {
@@ -84,7 +89,10 @@ export function useHBARDepositValidation(vaultAddress?: Address) {
       if (amountNum > walletHBAR * 0.9) {
         return {
           isValid: true,
-          warning: `You're depositing ${((amountNum / walletHBAR) * 100).toFixed(1)}% of your balance. Keep some HBAR for gas fees.`,
+          warning: `You're depositing ${(
+            (amountNum / walletHBAR) *
+            100
+          ).toFixed(1)}% of your balance. Keep some HBAR for gas fees.`,
         };
       }
     }
@@ -98,9 +106,9 @@ export function useHBARDepositValidation(vaultAddress?: Address) {
 /**
  * Validate HBAR withdrawal amount
  */
-export function useHBARWithdrawValidation(vaultAddress?: Address) {
+export function useHBARWithdrawValidation() {
   const { address } = useAccount();
-  
+
   const validate = (amount: string, vaultBalance: bigint): ValidationResult => {
     if (!amount || amount === "") {
       return { isValid: false, error: "Amount is required" };
@@ -123,7 +131,7 @@ export function useHBARWithdrawValidation(vaultAddress?: Address) {
 
     // Check vault balance
     const vaultHBAR = parseFloat(formatUnits(vaultBalance, HBAR_DECIMALS));
-    
+
     if (vaultHBAR === 0) {
       return {
         isValid: false,
@@ -134,7 +142,9 @@ export function useHBARWithdrawValidation(vaultAddress?: Address) {
     if (amountNum > vaultHBAR) {
       return {
         isValid: false,
-        error: `Insufficient vault balance. Available: ${vaultHBAR.toFixed(8)} HBAR`,
+        error: `Insufficient vault balance. Available: ${vaultHBAR.toFixed(
+          8
+        )} HBAR`,
       };
     }
 
@@ -168,16 +178,16 @@ export function useHBARWithdrawValidation(vaultAddress?: Address) {
 /**
  * Validate HTS token deposit amount
  */
-export function useHTSDepositValidation(
-  vaultAddress?: Address,
-  tokenAddress?: Address
-) {
+export function useHTSDepositValidation() {
   const { address } = useAccount();
-  
+
   // In production, you would fetch actual token balance here
   // For now, we'll validate structure
-  
-  const validate = (amount: string, userTokenBalance?: bigint): ValidationResult => {
+
+  const validate = (
+    amount: string,
+    userTokenBalance?: bigint
+  ): ValidationResult => {
     if (!amount || amount === "") {
       return { isValid: false, error: "Amount is required" };
     }
@@ -203,7 +213,10 @@ export function useHTSDepositValidation(
       if (amountInSmallestUnit > MAX_INT64) {
         return {
           isValid: false,
-          error: `Amount exceeds maximum value (${formatUnits(MAX_INT64, HTS_DECIMALS)} tokens)`,
+          error: `Amount exceeds maximum value (${formatUnits(
+            MAX_INT64,
+            HTS_DECIMALS
+          )} tokens)`,
         };
       }
     } catch (err) {
@@ -212,8 +225,10 @@ export function useHTSDepositValidation(
 
     // Check user balance if provided
     if (userTokenBalance !== undefined) {
-      const userBalance = parseFloat(formatUnits(userTokenBalance, HTS_DECIMALS));
-      
+      const userBalance = parseFloat(
+        formatUnits(userTokenBalance, HTS_DECIMALS)
+      );
+
       if (userBalance === 0) {
         return {
           isValid: false,
@@ -224,7 +239,9 @@ export function useHTSDepositValidation(
       if (amountNum > userBalance) {
         return {
           isValid: false,
-          error: `Insufficient balance. You have ${userBalance.toFixed(8)} tokens`,
+          error: `Insufficient balance. You have ${userBalance.toFixed(
+            8
+          )} tokens`,
         };
       }
 
@@ -246,11 +263,11 @@ export function useHTSDepositValidation(
 /**
  * Validate HTS token withdrawal amount
  */
-export function useHTSWithdrawValidation(
-  vaultAddress?: Address,
-  tokenAddress?: Address
-) {
-  const validate = (amount: string, vaultTokenBalance: bigint): ValidationResult => {
+export function useHTSWithdrawValidation() {
+  const validate = (
+    amount: string,
+    vaultTokenBalance: bigint
+  ): ValidationResult => {
     if (!amount || amount === "") {
       return { isValid: false, error: "Amount is required" };
     }
@@ -271,8 +288,10 @@ export function useHTSWithdrawValidation(
     }
 
     // Check vault balance
-    const vaultBalance = parseFloat(formatUnits(vaultTokenBalance, HTS_DECIMALS));
-    
+    const vaultBalance = parseFloat(
+      formatUnits(vaultTokenBalance, HTS_DECIMALS)
+    );
+
     if (vaultBalance === 0) {
       return {
         isValid: false,
@@ -283,7 +302,9 @@ export function useHTSWithdrawValidation(
     if (amountNum > vaultBalance) {
       return {
         isValid: false,
-        error: `Insufficient vault balance. Available: ${vaultBalance.toFixed(8)} tokens`,
+        error: `Insufficient vault balance. Available: ${vaultBalance.toFixed(
+          8
+        )} tokens`,
       };
     }
 
@@ -327,7 +348,8 @@ export function useRecipientValidation() {
     if (!recipient.startsWith("0x") || recipient.length !== 42) {
       return {
         isValid: false,
-        error: "Invalid address format. Must start with 0x and be 42 characters",
+        error:
+          "Invalid address format. Must start with 0x and be 42 characters",
       };
     }
 
@@ -369,7 +391,10 @@ export function formatAmountInput(value: string, decimals: number = 8): string {
 /**
  * Calculate max amount considering gas
  */
-export function calculateMaxWithGas(balance: bigint, decimals: number = 8): string {
+export function calculateMaxWithGas(
+  balance: bigint,
+  decimals: number = 8
+): string {
   const gasReserve = parseUnits("0.1", decimals); // Reserve 0.1 for gas
   const maxAmount = balance > gasReserve ? balance - gasReserve : BigInt(0);
   return formatUnits(maxAmount, decimals);

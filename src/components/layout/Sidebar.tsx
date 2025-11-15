@@ -152,7 +152,7 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Network:</span>
-                  <span className="text-foreground">Sepolia</span>
+                  <span className="text-foreground">Hedera Testnet</span>
                 </div>
               </div>
             </div>
