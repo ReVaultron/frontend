@@ -157,12 +157,13 @@ export function useUserVaultData(vaultAddress?: Address) {
     functionName: "getHBARBalance",
     query: { enabled: !!vaultAddress },
   });
+  console.log('hbarBalance', hbarBalance)
 
   return {
     owner: owner as Address | undefined,
     tokens: (tokens as Address[]) || [],
     tokenCount: tokenCount ? Number(tokenCount) : 0,
-    hbarBalance: hbarBalance ? (Number(hbarBalance) / 1e18).toFixed(4) : "0",
+    hbarBalance: hbarBalance ? (Number(hbarBalance) / 1e8).toFixed(4) : "0",
     hbarBalanceRaw: hbarBalance || BigInt(0),
     address: vaultAddress,
     refetchTokens,

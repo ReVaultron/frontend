@@ -1,21 +1,45 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import {
+  useAccount,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, ArrowUpRight, Wallet, TrendingUp, AlertTriangle, Plus, Loader2, CheckCircle2, XCircle } from "lucide-react";
-import { 
-  useUserVaultAddress, 
+import {
+  Activity,
+  ArrowUpRight,
+  Wallet,
+  TrendingUp,
+  AlertTriangle,
+  Plus,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
+import {
+  useUserVaultAddress,
   useUserVaultData,
-  useVolatilityIndexData 
+  useVolatilityIndexData,
 } from "@/hooks/useContracts";
-import { DEFAULT_PRICE_FEED_ID, FACTORY_VAULT_ABI, CONTRACT_ADDRESSES } from "@/lib/contracts/abis";
-import { parseEther } from "viem";
+import {
+  DEFAULT_PRICE_FEED_ID,
+  FACTORY_VAULT_ABI,
+  CONTRACT_ADDRESSES,
+} from "@/lib/contracts/abis";
+import { formatUnits, parseEther } from "viem";
+import { usePythPrice } from "@/hooks/usePythPrices";
+import { PYTH_PRICE_FEEDS } from "@/lib/pyth/price-feeds";
 
 // Create Vault Modal Component
-const CreateVaultModal = ({ isOpen, onClose, onSuccess }: { 
-  isOpen: boolean; 
+const CreateVaultModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+}: {
+  isOpen: boolean;
   onClose: () => void;
   onSuccess: (vaultAddress: string) => void;
 }) => {
@@ -28,13 +52,13 @@ const CreateVaultModal = ({ isOpen, onClose, onSuccess }: {
   const handleCreateVault = async () => {
     try {
       setIsCreating(true);
-      
+
       // Call VaultFactory.createVault() with 0 HBAR (free creation)
       writeContract({
         address: CONTRACT_ADDRESSES.FACTORY_VAULT as `0x${string}`,
         abi: FACTORY_VAULT_ABI,
-        functionName: 'createVault',
-        value: parseEther('0'), // Free vault creation
+        functionName: "createVault",
+        value: parseEther("0"), // Free vault creation
       });
     } catch (error) {
       console.error("Error creating vault:", error);
@@ -61,7 +85,9 @@ const CreateVaultModal = ({ isOpen, onClose, onSuccess }: {
         {/* Header */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-foreground">Create Your Vault</h2>
+            <h2 className="text-2xl font-bold text-foreground">
+              Create Your Vault
+            </h2>
             <button
               onClick={onClose}
               className="text-muted-foreground hover:text-foreground transition-colors"
@@ -71,7 +97,8 @@ const CreateVaultModal = ({ isOpen, onClose, onSuccess }: {
             </button>
           </div>
           <p className="text-muted-foreground">
-            Create a new vault to start managing your HTS tokens with automated rebalancing
+            Create a new vault to start managing your HTS tokens with automated
+            rebalancing
           </p>
         </div>
 
@@ -83,8 +110,12 @@ const CreateVaultModal = ({ isOpen, onClose, onSuccess }: {
                 <>
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
                   <div className="flex-1">
-                    <p className="font-medium text-foreground">Creating Vault...</p>
-                    <p className="text-sm text-muted-foreground">Please wait while your transaction is confirmed</p>
+                    <p className="font-medium text-foreground">
+                      Creating Vault...
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Please wait while your transaction is confirmed
+                    </p>
                   </div>
                 </>
               )}
@@ -92,17 +123,25 @@ const CreateVaultModal = ({ isOpen, onClose, onSuccess }: {
                 <>
                   <CheckCircle2 className="w-5 h-5 text-green-600" />
                   <div className="flex-1">
-                    <p className="font-medium text-foreground">Vault Created!</p>
-                    <p className="text-sm text-muted-foreground">Your vault is ready to use</p>
+                    <p className="font-medium text-foreground">
+                      Vault Created!
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Your vault is ready to use
+                    </p>
                   </div>
                 </>
               )}
             </div>
-            
+
             {hash && (
               <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">Transaction Hash:</p>
-                <p className="text-xs font-mono text-foreground break-all">{hash}</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  Transaction Hash:
+                </p>
+                <p className="text-xs font-mono text-foreground break-all">
+                  {hash}
+                </p>
               </div>
             )}
           </div>
@@ -112,7 +151,8 @@ const CreateVaultModal = ({ isOpen, onClose, onSuccess }: {
         {writeError && (
           <div className="p-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <p className="text-sm text-red-800 dark:text-red-300">
-              {writeError.message || "Failed to create vault. Please try again."}
+              {writeError.message ||
+                "Failed to create vault. Please try again."}
             </p>
           </div>
         )}
@@ -126,7 +166,9 @@ const CreateVaultModal = ({ isOpen, onClose, onSuccess }: {
                   <Wallet className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-foreground mb-1">Your Personal Vault</h3>
+                  <h3 className="font-semibold text-foreground mb-1">
+                    Your Personal Vault
+                  </h3>
                   <p className="text-sm text-muted-foreground">
                     Each wallet can create one vault to manage HTS tokens
                   </p>
@@ -206,30 +248,58 @@ const Vaults = () => {
   const navigate = useNavigate();
   const { address: userAddress, isConnected } = useAccount();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  
+
   // Get user's vault address
-  const { vaultAddress, hasVault, refetch: refetchVault } = useUserVaultAddress(userAddress);
-  
+  const {
+    vaultAddress,
+    hasVault,
+    refetch: refetchVault,
+  } = useUserVaultAddress(userAddress);
+
   // Get vault data if exists
   const vaultData = useUserVaultData(hasVault ? vaultAddress : undefined);
-  
+
   // Get volatility data
-  const { currentVolatility, lastUpdate } = useVolatilityIndexData(DEFAULT_PRICE_FEED_ID);
+  const { currentVolatility, lastUpdate } = useVolatilityIndexData(
+    DEFAULT_PRICE_FEED_ID
+  );
+
+  const {
+    price: hbarPrice,
+    isLoading: priceLoading,
+    error: priceError,
+    lastUpdate: priceLastUpdate,
+  } = usePythPrice({
+    priceFeedId: PYTH_PRICE_FEEDS.HBAR_USD,
+    refreshInterval: 60000, // Update every 60 seconds
+  });
+
+  const vaultValueUSD = useMemo(() => {
+    if (!hbarPrice || !vaultData.hbarBalanceRaw) return "0.00";
+
+    const hbarAmount = parseFloat(formatUnits(vaultData.hbarBalanceRaw, 8));
+    return (hbarAmount * hbarPrice.priceUSD).toFixed(2);
+  }, [hbarPrice, vaultData.hbarBalanceRaw]);
 
   // Build vaults array from actual data
-  const vaults = hasVault && vaultAddress ? [{
-    id: vaultAddress,
-    name: "My Vault",
-    status: "Active" as const,
-    riskLevel: getRiskLevel(currentVolatility, 30),
-    hbarBalance: vaultData.hbarBalance,
-    totalValue: vaultData.totalValue || "0.00",
-    tokens: vaultData.tokenCount,
-    lastRebalance: getTimeAgo(lastUpdate),
-    volatility: currentVolatility,
-    threshold: 30.0,
-    address: vaultAddress
-  }] : [];
+  const vaults =
+    hasVault && vaultAddress
+      ? [
+          {
+            id: vaultAddress,
+            name: "My Vault",
+            status: "Active" as const,
+            riskLevel: getRiskLevel(currentVolatility, 30),
+            hbarBalance: vaultData.hbarBalance,
+            totalValue: vaultValueUSD,
+            tokens: vaultData.tokenCount,
+            lastRebalance: getTimeAgo(lastUpdate),
+            volatility: currentVolatility,
+            threshold: 30.0,
+            address: vaultAddress,
+          },
+        ]
+      : [];
 
   // Helper functions
   function getRiskLevel(volatility: number, threshold: number) {
@@ -282,9 +352,12 @@ const Vaults = () => {
   };
 
   // Calculate stats
-  const totalValue = vaults.reduce((sum, v) => sum + parseFloat(v.totalValue.replace(/,/g, '') || '0'), 0);
-  const activeVaults = vaults.filter(v => v.status === "Active").length;
-  const needAttention = vaults.filter(v => v.volatility > v.threshold).length;
+  const totalValue = vaults.reduce(
+    (sum, v) => sum + parseFloat(v.totalValue.replace(/,/g, "") || "0"),
+    0
+  );
+  const activeVaults = vaults.filter((v) => v.status === "Active").length;
+  const needAttention = vaults.filter((v) => v.volatility > v.threshold).length;
 
   if (!isConnected) {
     return (
@@ -294,7 +367,9 @@ const Vaults = () => {
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
               <Wallet className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold text-foreground">Connect Your Wallet</h3>
+            <h3 className="text-xl font-semibold text-foreground">
+              Connect Your Wallet
+            </h3>
             <p className="text-muted-foreground">
               Please connect your wallet to view and manage your vaults
             </p>
@@ -334,7 +409,9 @@ const Vaults = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Vaults</p>
-              <p className="text-2xl font-bold text-foreground">{vaults.length}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {vaults.length}
+              </p>
             </div>
           </div>
         </Card>
@@ -346,7 +423,11 @@ const Vaults = () => {
             <div>
               <p className="text-sm text-muted-foreground">Total Value</p>
               <p className="text-2xl font-bold text-foreground">
-                ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                $
+                {totalValue.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </p>
             </div>
           </div>
@@ -358,7 +439,9 @@ const Vaults = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Active Vaults</p>
-              <p className="text-2xl font-bold text-foreground">{activeVaults}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {activeVaults}
+              </p>
             </div>
           </div>
         </Card>
@@ -369,7 +452,9 @@ const Vaults = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Need Attention</p>
-              <p className="text-2xl font-bold text-foreground">{needAttention}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {needAttention}
+              </p>
             </div>
           </div>
         </Card>
@@ -379,7 +464,10 @@ const Vaults = () => {
       {vaults.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {vaults.map((vault) => (
-            <Card key={vault.id} className="p-6 hover:border-primary/50 transition-colors">
+            <Card
+              key={vault.id}
+              className="p-6 hover:border-primary/50 transition-colors"
+            >
               <div className="space-y-4">
                 {/* Header */}
                 <div className="flex items-start justify-between">
@@ -388,40 +476,66 @@ const Vaults = () => {
                       <Activity className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-foreground">{vault.name}</h3>
-                      <p className="text-sm text-muted-foreground">{vault.tokens} token{vault.tokens !== 1 ? 's' : ''}</p>
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {vault.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {vault.tokens} token{vault.tokens !== 1 ? "s" : ""}
+                      </p>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 items-end">
-                    <Badge className={getStatusColor(vault.status)}>{vault.status}</Badge>
-                    <Badge className={getRiskColor(vault.riskLevel)}>{vault.riskLevel} Risk</Badge>
+                    <Badge className={getStatusColor(vault.status)}>
+                      {vault.status}
+                    </Badge>
+                    <Badge className={getRiskColor(vault.riskLevel)}>
+                      {vault.riskLevel} Risk
+                    </Badge>
                   </div>
                 </div>
 
                 {/* Metrics */}
                 <div className="grid grid-cols-2 gap-4 py-4 border-y border-border">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">HBAR Balance</p>
-                    <p className="text-lg font-semibold text-foreground">{vault.hbarBalance} ℏ</p>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      HBAR Balance
+                    </p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {vault.hbarBalance} ℏ
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Total Value</p>
-                    <p className="text-lg font-semibold text-foreground">${vault.totalValue}</p>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Total Value
+                    </p>
+                    <p className="text-lg font-semibold text-foreground">
+                      ${vault.totalValue}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Volatility</p>
-                    <p className="text-lg font-semibold text-foreground">{vault.volatility.toFixed(1)}%</p>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Volatility
+                    </p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {vault.volatility.toFixed(1)}%
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Last Rebalance</p>
-                    <p className="text-lg font-semibold text-foreground">{vault.lastRebalance}</p>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Last Rebalance
+                    </p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {vault.lastRebalance}
+                    </p>
                   </div>
                 </div>
 
                 {/* Volatility Bar */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Volatility vs Threshold</span>
+                    <span className="text-sm text-muted-foreground">
+                      Volatility vs Threshold
+                    </span>
                     <span className="text-sm font-medium text-foreground">
                       {vault.volatility.toFixed(1)}% / {vault.threshold}%
                     </span>
@@ -435,7 +549,12 @@ const Vaults = () => {
                           ? "bg-gradient-to-r from-yellow-500 to-orange-500"
                           : "bg-gradient-to-r from-green-500 to-green-600"
                       }`}
-                      style={{ width: `${Math.min((vault.volatility / vault.threshold) * 100, 100)}%` }}
+                      style={{
+                        width: `${Math.min(
+                          (vault.volatility / vault.threshold) * 100,
+                          100
+                        )}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -465,9 +584,12 @@ const Vaults = () => {
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
               <Wallet className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold text-foreground">No Vaults Yet</h3>
+            <h3 className="text-xl font-semibold text-foreground">
+              No Vaults Yet
+            </h3>
             <p className="text-muted-foreground">
-              Create your first vault to start managing your portfolio with AI-powered rebalancing
+              Create your first vault to start managing your portfolio with
+              AI-powered rebalancing
             </p>
             <Button
               onClick={() => setIsCreateModalOpen(true)}

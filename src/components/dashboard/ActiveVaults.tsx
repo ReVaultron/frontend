@@ -18,9 +18,15 @@ import { formatDistanceToNow } from "date-fns";
 import { useAccount } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ParsedPythPrice } from "@/lib/pyth/hermes-client";
+import { formatUnits } from "viem";
 
-export function ActiveVaults() {
+interface ActiveVaultsProps {
+  hbarPrice?: ParsedPythPrice | null;
+}
+
+export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
   const { address: userAddress, isConnected } = useAccount();
   const { vaultAddress, hasVault } = useUserVaultAddress(userAddress);
   const vaultData = useUserVaultData(hasVault ? vaultAddress : undefined);
@@ -33,6 +39,14 @@ export function ActiveVaults() {
   // User threshold (would come from user settings in production)
   const userThreshold = 30.0;
   const isAboveThreshold = currentVolatility > userThreshold;
+
+    // Calculate USD value
+  const vaultValueUSD = useMemo(() => {
+    if (!hbarPrice || !vaultData.hbarBalanceRaw) return "0.00";
+    
+    const hbarAmount = parseFloat(formatUnits(vaultData.hbarBalanceRaw, 8));
+    return (hbarAmount * hbarPrice.priceUSD).toFixed(2);
+  }, [hbarPrice, vaultData.hbarBalanceRaw]);
 
   // Calculate risk level
   const riskLevel = (() => {
@@ -169,7 +183,7 @@ export function ActiveVaults() {
           <div>
             <p className="text-sm text-muted-foreground mb-1">Total Value</p>
             <p className="text-lg font-semibold text-foreground">
-              ${parseFloat(vaultData.totalValue || "0").toFixed(2)}
+              ${vaultValueUSD}
             </p>
           </div>
           <div>
