@@ -6,6 +6,7 @@ import {
   useFactoryVaultData, 
   useUserVaultAddress 
 } from "@/hooks/useContracts";
+import { formatUnits } from "viem";
 
 export function useVaultCreation() {
   const { address, isConnected } = useAccount();
@@ -45,10 +46,11 @@ export function useVaultCreation() {
     }
 
     setCreationStep("checking");
+    const creationFeeAmount = BigInt(formatUnits(creationFeeRaw, 8) * 1e18); // Assuming 8 decimals for HBAR
 
     try {
       // Create vault with creation fee
-      await createVault(creationFeeRaw);
+      await createVault(creationFeeAmount);
     } catch (err) {
       setCreationStep("error");
       throw err;

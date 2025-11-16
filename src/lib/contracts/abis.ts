@@ -1021,25 +1021,30 @@ export const VOLATILITY_INDEX_ABI = [
 export const PRICE_FEED_IDS = {
   // HBAR/USD - Hedera
   HBAR_USD:
-    "0xf2ef5dc6156e6cdccda6c315f3fc6de2bf37e9aecbc9b5efc51de98096c3e7c6" as `0x${string}`,
-
+    "3728e591097635310e6341af53db8b7ee42da9b3a8d918f9463ce9cca886dfbd" as `0x${string}`,
   // Alternative major pairs (for reference)
   BTC_USD:
-    "0xf9c0172ba10dfa4d19088d94f5bf61d3b54d5bd7483a322a982e1373ee8ea31b" as `0x${string}`,
+    "e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43" as `0x${string}`,
+  WBTC_USD:
+    "c9d8b075a5c69303365ae23633d4e085199bf5c520a3b90fed1322a0342ffc33" as `0x${string}`,
   ETH_USD:
-    "0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6" as `0x${string}`,
+    "ff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace" as `0x${string}`,
   WETH_USD:
-    "0x86d196443d86a992f6c4ce38779cdfa36b649e43052ef8bedbe0b503029a94c2" as `0x${string}`,
+    "9d4294bbcd1174d6f2003ec365831e64cc31d9f6f15a2b85399db8d5000960f6" as `0x${string}`,
   USDC_USD:
-    "0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722" as `0x${string}`,
+    "eaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a" as `0x${string}`,
 } as const;
 
 // Default price feed ID for the app (HBAR/USD)
 export const DEFAULT_PRICE_FEED_ID = PRICE_FEED_IDS.HBAR_USD;
 // Contract addresses
 export const CONTRACT_ADDRESSES = {
-  FACTORY_VAULT: "0x82637654c32994c938a41ba0095123b9053edd7d" as `0x${string}`, // 0.0.7247187
-  // USER_VAULT: "0x3542b3ed6c2d124814361d60d2a00ac188ceae7b" as `0x${string}`, // 0.0.7247188
+  FACTORY_VAULT: "0x91a14fb3cc6c86bd3c03fe6c93b9af0953f05efb" as `0x${string}`, // 0.0.7268904
   VOLATILITY_INDEX:
-    "0xfc982a861622997f2068921e38f753eee6be0dde" as `0x${string}`, // 0.0.7213992
+    "0x07cdee8e50cb4983f93a2bb3d65cf8303df22951" as `0x${string}`, // 0.0.7268905
+  SAUCER_SWAPPER:
+    "0x8cc8f8706956df0cd2833330277da448602f8487" as `0x${string}`, // 0.0.7268906
+  REBALANCER_EXECUTOR:
+    "0x76d35728285bf933263b47552e1df88099b27e75" as `0x${string}`, // 0.0.7268907
+  
 } as const;

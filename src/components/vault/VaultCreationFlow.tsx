@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle, XCircle, Wallet } from "lucide-react";
 import { useVaultCreation } from "@/hooks/useVaultCreation";
-import { formatEther } from "viem";
+import { formatEther, formatUnits } from "viem";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 
 interface VaultCreationModalProps {
@@ -26,7 +26,6 @@ export function VaultCreationModal({
     error,
     transactionHash,
   } = useVaultCreation();
-  console.log('inside')
 
   const handleCreate = async () => {
     try {
@@ -74,7 +73,7 @@ export function VaultCreationModal({
                 Creation Fee
               </span>
               <span className="text-lg font-bold">
-                {formatEther(creationFeeRaw)} HBAR
+                {parseFloat(formatUnits(creationFeeRaw, 8)).toFixed(2)} HBAR
               </span>
             </div>
           </div>
