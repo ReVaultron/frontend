@@ -1021,18 +1021,18 @@ export const VOLATILITY_INDEX_ABI = [
 export const PRICE_FEED_IDS = {
   // HBAR/USD - Hedera
   HBAR_USD:
-    "3728e591097635310e6341af53db8b7ee42da9b3a8d918f9463ce9cca886dfbd" as `0x${string}`,
+    "0x3728e591097635310e6341af53db8b7ee42da9b3a8d918f9463ce9cca886dfbd" as `0x${string}`,
   // Alternative major pairs (for reference)
   BTC_USD:
-    "e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43" as `0x${string}`,
+    "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43" as `0x${string}`,
   WBTC_USD:
-    "c9d8b075a5c69303365ae23633d4e085199bf5c520a3b90fed1322a0342ffc33" as `0x${string}`,
+    "0xc9d8b075a5c69303365ae23633d4e085199bf5c520a3b90fed1322a0342ffc33" as `0x${string}`,
   ETH_USD:
-    "ff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace" as `0x${string}`,
+    "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace" as `0x${string}`,
   WETH_USD:
-    "9d4294bbcd1174d6f2003ec365831e64cc31d9f6f15a2b85399db8d5000960f6" as `0x${string}`,
+    "0x9d4294bbcd1174d6f2003ec365831e64cc31d9f6f15a2b85399db8d5000960f6" as `0x${string}`,
   USDC_USD:
-    "eaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a" as `0x${string}`,
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a" as `0x${string}`,
 } as const;
 
 // Default price feed ID for the app (HBAR/USD)

@@ -32,217 +32,218 @@ import {
 import { formatUnits, parseEther } from "viem";
 import { usePythPrice } from "@/hooks/usePythPrices";
 import { PYTH_PRICE_FEEDS } from "@/lib/pyth/price-feeds";
+import { VaultCreationModal } from "@/components/vault/VaultCreationFlow";
 
 // Create Vault Modal Component
-const CreateVaultModal = ({
-  isOpen,
-  onClose,
-  onSuccess,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: (vaultAddress: string) => void;
-}) => {
-  const [isCreating, setIsCreating] = useState(false);
-  const { writeContract, data: hash, error: writeError } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-  });
+// const CreateVaultModal = ({
+//   isOpen,
+//   onClose,
+//   onSuccess,
+// }: {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   onSuccess: (vaultAddress: string) => void;
+// }) => {
+//   const [isCreating, setIsCreating] = useState(false);
+//   const { writeContract, data: hash, error: writeError } = useWriteContract();
+//   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+//     hash,
+//   });
 
-  const handleCreateVault = async () => {
-    try {
-      setIsCreating(true);
+//   const handleCreateVault = async () => {
+//     try {
+//       setIsCreating(true);
 
-      // Call VaultFactory.createVault() with 0 HBAR (free creation)
-      writeContract({
-        address: CONTRACT_ADDRESSES.FACTORY_VAULT as `0x${string}`,
-        abi: FACTORY_VAULT_ABI,
-        functionName: "createVault",
-        value: parseEther("0"), // Free vault creation
-      });
-    } catch (error) {
-      console.error("Error creating vault:", error);
-      setIsCreating(false);
-    }
-  };
+//       // Call VaultFactory.createVault() with 0 HBAR (free creation)
+//       writeContract({
+//         address: CONTRACT_ADDRESSES.FACTORY_VAULT as `0x${string}`,
+//         abi: FACTORY_VAULT_ABI,
+//         functionName: "createVault",
+//         value: parseEther("0"), // Free vault creation
+//       });
+//     } catch (error) {
+//       console.error("Error creating vault:", error);
+//       setIsCreating(false);
+//     }
+//   };
 
-  // Handle success
-  if (isSuccess && hash) {
-    // In a real implementation, you'd parse the VaultCreated event to get the vault address
-    // For now, we'll simulate it
-    setTimeout(() => {
-      onSuccess("0x...newVaultAddress");
-      setIsCreating(false);
-      onClose();
-    }, 1000);
-  }
+//   // Handle success
+//   if (isSuccess && hash) {
+//     // In a real implementation, you'd parse the VaultCreated event to get the vault address
+//     // For now, we'll simulate it
+//     setTimeout(() => {
+//       onSuccess("0x...newVaultAddress");
+//       setIsCreating(false);
+//       onClose();
+//     }, 1000);
+//   }
 
-  if (!isOpen) return null;
+//   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-6 space-y-6">
-        {/* Header */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-foreground">
-              Create Your Vault
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              disabled={isCreating || isConfirming}
-            >
-              <XCircle className="w-6 h-6" />
-            </button>
-          </div>
-          <p className="text-muted-foreground">
-            Create a new vault to start managing your HTS tokens with automated
-            rebalancing
-          </p>
-        </div>
+//   return (
+//     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+//       <Card className="w-full max-w-md p-6 space-y-6">
+//         {/* Header */}
+//         <div className="space-y-2">
+//           <div className="flex items-center justify-between">
+//             <h2 className="text-2xl font-bold text-foreground">
+//               Create Your Vault
+//             </h2>
+//             <button
+//               onClick={onClose}
+//               className="text-muted-foreground hover:text-foreground transition-colors"
+//               disabled={isCreating || isConfirming}
+//             >
+//               <XCircle className="w-6 h-6" />
+//             </button>
+//           </div>
+//           <p className="text-muted-foreground">
+//             Create a new vault to start managing your HTS tokens with automated
+//             rebalancing
+//           </p>
+//         </div>
 
-        {/* Status Display */}
-        {(isCreating || isConfirming || isSuccess) && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-              {isConfirming && (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">
-                      Creating Vault...
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Please wait while your transaction is confirmed
-                    </p>
-                  </div>
-                </>
-              )}
-              {isSuccess && (
-                <>
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">
-                      Vault Created!
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Your vault is ready to use
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
+//         {/* Status Display */}
+//         {(isCreating || isConfirming || isSuccess) && (
+//           <div className="space-y-3">
+//             <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+//               {isConfirming && (
+//                 <>
+//                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
+//                   <div className="flex-1">
+//                     <p className="font-medium text-foreground">
+//                       Creating Vault...
+//                     </p>
+//                     <p className="text-sm text-muted-foreground">
+//                       Please wait while your transaction is confirmed
+//                     </p>
+//                   </div>
+//                 </>
+//               )}
+//               {isSuccess && (
+//                 <>
+//                   <CheckCircle2 className="w-5 h-5 text-green-600" />
+//                   <div className="flex-1">
+//                     <p className="font-medium text-foreground">
+//                       Vault Created!
+//                     </p>
+//                     <p className="text-sm text-muted-foreground">
+//                       Your vault is ready to use
+//                     </p>
+//                   </div>
+//                 </>
+//               )}
+//             </div>
 
-            {hash && (
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">
-                  Transaction Hash:
-                </p>
-                <p className="text-xs font-mono text-foreground break-all">
-                  {hash}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
+//             {hash && (
+//               <div className="p-3 bg-muted/50 rounded-lg">
+//                 <p className="text-xs text-muted-foreground mb-1">
+//                   Transaction Hash:
+//                 </p>
+//                 <p className="text-xs font-mono text-foreground break-all">
+//                   {hash}
+//                 </p>
+//               </div>
+//             )}
+//           </div>
+//         )}
 
-        {/* Error Display */}
-        {writeError && (
-          <div className="p-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <p className="text-sm text-red-800 dark:text-red-300">
-              {writeError.message ||
-                "Failed to create vault. Please try again."}
-            </p>
-          </div>
-        )}
+//         {/* Error Display */}
+//         {writeError && (
+//           <div className="p-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+//             <p className="text-sm text-red-800 dark:text-red-300">
+//               {writeError.message ||
+//                 "Failed to create vault. Please try again."}
+//             </p>
+//           </div>
+//         )}
 
-        {/* Vault Info */}
-        {!isCreating && !isConfirming && !isSuccess && (
-          <div className="space-y-4">
-            <div className="p-4 bg-muted rounded-lg space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Wallet className="w-5 h-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground mb-1">
-                    Your Personal Vault
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Each wallet can create one vault to manage HTS tokens
-                  </p>
-                </div>
-              </div>
-            </div>
+//         {/* Vault Info */}
+//         {!isCreating && !isConfirming && !isSuccess && (
+//           <div className="space-y-4">
+//             <div className="p-4 bg-muted rounded-lg space-y-3">
+//               <div className="flex items-start gap-3">
+//                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+//                   <Wallet className="w-5 h-5 text-primary" />
+//                 </div>
+//                 <div className="flex-1">
+//                   <h3 className="font-semibold text-foreground mb-1">
+//                     Your Personal Vault
+//                   </h3>
+//                   <p className="text-sm text-muted-foreground">
+//                     Each wallet can create one vault to manage HTS tokens
+//                   </p>
+//                 </div>
+//               </div>
+//             </div>
 
-            <div className="space-y-2">
-              <h4 className="font-semibold text-foreground">What you get:</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span>Secure storage for HTS tokens and HBAR</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span>Automatic balance synchronization</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span>Full control over deposits and withdrawals</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span>AI-powered rebalancing recommendations</span>
-                </li>
-              </ul>
-            </div>
+//             <div className="space-y-2">
+//               <h4 className="font-semibold text-foreground">What you get:</h4>
+//               <ul className="space-y-2 text-sm text-muted-foreground">
+//                 <li className="flex items-start gap-2">
+//                   <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+//                   <span>Secure storage for HTS tokens and HBAR</span>
+//                 </li>
+//                 <li className="flex items-start gap-2">
+//                   <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+//                   <span>Automatic balance synchronization</span>
+//                 </li>
+//                 <li className="flex items-start gap-2">
+//                   <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+//                   <span>Full control over deposits and withdrawals</span>
+//                 </li>
+//                 <li className="flex items-start gap-2">
+//                   <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+//                   <span>AI-powered rebalancing recommendations</span>
+//                 </li>
+//               </ul>
+//             </div>
 
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <p className="text-sm text-blue-800 dark:text-blue-300">
-                <strong>Free to create!</strong> No creation fees required.
-              </p>
-            </div>
-          </div>
-        )}
+//             <div className="p-3 bg-blue-100 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+//               <p className="text-sm text-blue-800 dark:text-blue-300">
+//                 <strong>Free to create!</strong> No creation fees required.
+//               </p>
+//             </div>
+//           </div>
+//         )}
 
-        {/* Actions */}
-        <div className="flex gap-3">
-          <Button
-            onClick={onClose}
-            variant="outline"
-            className="flex-1"
-            disabled={isCreating || isConfirming}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreateVault}
-            className="flex-1 bg-gradient-to-r from-primary to-purple-600"
-            disabled={isCreating || isConfirming || isSuccess}
-          >
-            {isConfirming ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating...
-              </>
-            ) : isSuccess ? (
-              <>
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Created!
-              </>
-            ) : (
-              <>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Vault
-              </>
-            )}
-          </Button>
-        </div>
-      </Card>
-    </div>
-  );
-};
+//         {/* Actions */}
+//         <div className="flex gap-3">
+//           <Button
+//             onClick={onClose}
+//             variant="outline"
+//             className="flex-1"
+//             disabled={isCreating || isConfirming}
+//           >
+//             Cancel
+//           </Button>
+//           <Button
+//             onClick={handleCreateVault}
+//             className="flex-1 bg-gradient-to-r from-primary to-purple-600"
+//             disabled={isCreating || isConfirming || isSuccess}
+//           >
+//             {isConfirming ? (
+//               <>
+//                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+//                 Creating...
+//               </>
+//             ) : isSuccess ? (
+//               <>
+//                 <CheckCircle2 className="w-4 h-4 mr-2" />
+//                 Created!
+//               </>
+//             ) : (
+//               <>
+//                 <Plus className="w-4 h-4 mr-2" />
+//                 Create Vault
+//               </>
+//             )}
+//           </Button>
+//         </div>
+//       </Card>
+//     </div>
+//   );
+// };
 
 const Vaults = () => {
   const navigate = useNavigate();
@@ -253,7 +254,6 @@ const Vaults = () => {
   const {
     vaultAddress,
     hasVault,
-    refetch: refetchVault,
   } = useUserVaultAddress(userAddress);
 
   // Get vault data if exists
@@ -342,13 +342,6 @@ const Vaults = () => {
       default:
         return "bg-muted text-muted-foreground";
     }
-  };
-
-  // Handle vault creation success
-  const handleVaultCreated = (newVaultAddress: string) => {
-    console.log("Vault created:", newVaultAddress);
-    // Refetch vault data
-    refetchVault();
   };
 
   // Calculate stats
@@ -603,10 +596,10 @@ const Vaults = () => {
       )}
 
       {/* Create Vault Modal */}
-      <CreateVaultModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={handleVaultCreated}
+      <VaultCreationModal
+        open={isCreateModalOpen}
+        onOpenChange={() => setIsCreateModalOpen(false)}
+        // onSuccess={handleVaultCreated}
       />
     </div>
   );

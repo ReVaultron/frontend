@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VaultCreationModal } from "@/components/vault/VaultCreationFlow";
+import { DEFAULT_PRICE_FEED_ID } from "@/lib/contracts/abis";
 
 const Dashboard = () => {
   const { address: userAddress, isConnected } = useAccount();
@@ -293,7 +294,7 @@ const Dashboard = () => {
         {/* Volatility Monitor */}
         <VolatilityMonitor
           threshold={30}
-          priceFeedId={PYTH_PRICE_FEEDS.HBAR_USD}
+          priceFeedId={DEFAULT_PRICE_FEED_ID}
         />
 
         {/* Active Vaults & Agent Feed */}
