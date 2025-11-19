@@ -1,22 +1,27 @@
 // hooks/useHTSTokenOperations.ts
 import { useState, useEffect } from "react";
 import { useWaitForTransactionReceipt } from "wagmi";
-import { 
-  useUserVaultWrite, 
-  useTokenBalance, 
+import {
+  useUserVaultWrite,
+  useTokenBalance,
   useTokenAssociation,
-  toInt64 
+  toInt64,
 } from "@/hooks/useContracts";
 import { parseUnits } from "viem";
 import type { Address } from "viem";
+import { ETH_DECIMALS } from "@/lib/constants";
 
-// HTS tokens typically use 8 decimals
-const HTS_DECIMALS = 8;
+export function useTokenAssociationOperations(
+  vaultAddress?: Address,
+  tokenAddress?: Address
+) {
+  const { isVaultAssociated, isAccountAssociated } = useTokenAssociation(
+    vaultAddress,
+    tokenAddress
+  );
+  const { associateToken, isPending, isSuccess, error, hash } =
+    useUserVaultWrite(vaultAddress);
 
-export function useTokenAssociationOperations(vaultAddress?: Address, tokenAddress?: Address) {
-  const { isVaultAssociated, isAccountAssociated } = useTokenAssociation(vaultAddress, tokenAddress);
-  const { associateToken, isPending, isSuccess, error, hash } = useUserVaultWrite(vaultAddress);
-  
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
 
   const associate = async () => {
@@ -40,10 +45,14 @@ export function useTokenAssociationOperations(vaultAddress?: Address, tokenAddre
 }
 
 export function useHTSDeposit(vaultAddress?: Address, tokenAddress?: Address) {
-  const { deposit, isPending, isSuccess, error, hash } = useUserVaultWrite(vaultAddress);
+  const { deposit, isPending, isSuccess, error, hash } =
+    useUserVaultWrite(vaultAddress);
   const { isVaultAssociated } = useTokenAssociation(vaultAddress, tokenAddress);
-  const { refetchTracked, refetchActual } = useTokenBalance(vaultAddress, tokenAddress);
-  
+  const { refetchTracked, refetchActual } = useTokenBalance(
+    vaultAddress,
+    tokenAddress
+  );
+
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
 
   const depositTokens = async (amount: string) => {
@@ -56,7 +65,7 @@ export function useHTSDeposit(vaultAddress?: Address, tokenAddress?: Address) {
     }
 
     // Convert to smallest unit with 8 decimals
-    const amountInSmallestUnit = parseUnits(amount, HTS_DECIMALS);
+    const amountInSmallestUnit = parseUnits(amount, ETH_DECIMALS);
     const int64Amount = toInt64(amountInSmallestUnit);
 
     await deposit(tokenAddress, int64Amount);
@@ -77,9 +86,11 @@ export function useHTSDeposit(vaultAddress?: Address, tokenAddress?: Address) {
 }
 
 export function useHTSWithdraw(vaultAddress?: Address, tokenAddress?: Address) {
-  const { withdrawTo, syncTokenBalance, isPending, isSuccess, error, hash } = useUserVaultWrite(vaultAddress);
-  const { actualBalance, needsSync, refetchTracked, refetchActual } = useTokenBalance(vaultAddress, tokenAddress);
-  
+  const { withdrawTo, syncTokenBalance, isPending, isSuccess, error, hash } =
+    useUserVaultWrite(vaultAddress);
+  const { actualBalance, needsSync, refetchTracked, refetchActual } =
+    useTokenBalance(vaultAddress, tokenAddress);
+
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -94,14 +105,14 @@ export function useHTSWithdraw(vaultAddress?: Address, tokenAddress?: Address) {
       try {
         await syncTokenBalance(tokenAddress);
         // Wait for sync to complete
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise((resolve) => setTimeout(resolve, 3000));
       } finally {
         setIsSyncing(false);
       }
     }
 
     // Convert to smallest unit
-    const amountInSmallestUnit = parseUnits(amount, HTS_DECIMALS);
+    const amountInSmallestUnit = parseUnits(amount, ETH_DECIMALS);
     const int64Amount = toInt64(amountInSmallestUnit);
 
     // Verify sufficient balance

@@ -1,6 +1,12 @@
 // components/dashboard/QuickActions.tsx - Enhanced
 import { useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, Link as LinkIcon, Activity, RefreshCw } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Link as LinkIcon,
+  Activity,
+  RefreshCw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { HBARDepositModal } from "@/components/vault/HBARDepositModal";
@@ -9,6 +15,9 @@ import { HTSDepositModal } from "@/components/vault/HTSDepositModal";
 import { HTSWithdrawModal } from "@/components/vault/HTSWithdrawModal";
 import { TokenAssociationModal } from "@/components/vault/TokenAssociationModal";
 import type { Address } from "viem";
+import { ERC20DepositModal } from "../vault/ERC20DepositModal";
+import { ERC20WithdrawModal } from "../vault/ERC20WithdrawModal";
+import { USDC_TOKEN_ADDRESS as tokenAddress } from "@/lib/constants";
 
 interface QuickActionsProps {
   vaultAddress?: Address;
@@ -21,6 +30,8 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
   const [depositTokenOpen, setDepositTokenOpen] = useState(false);
   const [withdrawTokenOpen, setWithdrawTokenOpen] = useState(false);
   const [associateTokenOpen, setAssociateTokenOpen] = useState(false);
+  const [depositERC20Open, setDepositERC20Open] = useState(false);
+  const [withdrawERC20Open, setWithdrawERC20Open] = useState(false);
 
   // Example token - would be selected by user
   const exampleToken = {
@@ -49,7 +60,9 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Quick Actions</h3>
+            <h3 className="text-lg font-semibold text-foreground">
+              Quick Actions
+            </h3>
             <p className="text-sm text-muted-foreground">
               Manage your vault with one-click actions
             </p>
@@ -109,6 +122,30 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
             <span className="text-sm font-medium">Withdraw Token</span>
           </Button>
 
+          {/* Deposit ERC20 */}
+          <Button
+            variant="outline"
+            className="flex flex-col items-center justify-center h-24 hover:border-primary hover:bg-primary/5 transition-all"
+            onClick={() => setDepositERC20Open(true)}
+          >
+            <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center mb-2">
+              <ArrowDownToLine className="w-5 h-5 text-teal-600 dark:text-teal-300" />
+            </div>
+            <span className="text-sm font-medium">Deposit USDC</span>
+          </Button>
+
+          {/* Withdraw ERC20 */}
+          <Button
+            variant="outline"
+            className="flex flex-col items-center justify-center h-24 hover:border-primary hover:bg-primary/5 transition-all"
+            onClick={() => setWithdrawERC20Open(true)}
+          >
+            <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center mb-2">
+              <ArrowUpFromLine className="w-5 h-5 text-yellow-600 dark:text-yellow-300" />
+            </div>
+            <span className="text-sm font-medium">Withdraw USDC</span>
+          </Button>
+
           {/* Associate Token */}
           <Button
             variant="outline"
@@ -125,7 +162,8 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
         {/* Info Banner */}
         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
           <p className="text-xs text-blue-900 dark:text-blue-100">
-            💡 <strong>Tip:</strong> Always associate tokens before depositing. Gas fees apply to all operations (~0.05 HBAR).
+            💡 <strong>Tip:</strong> Always associate tokens before depositing.
+            Gas fees apply to all operations (~0.05 HBAR).
           </p>
         </div>
       </Card>
@@ -159,6 +197,20 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
             vaultAddress={vaultAddress}
             tokenAddress={exampleToken.address}
             tokenSymbol={exampleToken.symbol}
+          />
+
+          <ERC20DepositModal
+            open={depositERC20Open}
+            onOpenChange={setDepositERC20Open}
+            vaultAddress={vaultAddress}
+            tokenAddress={tokenAddress}
+          />
+
+          <ERC20WithdrawModal
+            open={withdrawERC20Open}
+            onOpenChange={setWithdrawERC20Open}
+            vaultAddress={vaultAddress}
+            tokenAddress={tokenAddress}
           />
 
           <TokenAssociationModal

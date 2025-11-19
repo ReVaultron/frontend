@@ -1,18 +1,23 @@
 // hooks/useHBAROperations.ts
 import { useState } from "react";
-import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
+import {
+  useAccount,
+  useSendTransaction,
+  useWaitForTransactionReceipt,
+} from "wagmi";
 import { useUserVaultWrite, useUserVaultData } from "@/hooks/useContracts";
 import { parseUnits, formatUnits } from "viem";
 import type { Address } from "viem";
-
-// Hedera uses 8 decimals (tinybars), not 18 like Ethereum
-const ETH_DECIMALS = 18;
-const HBAR_DECIMALS = 8;
-
+import { ETH_DECIMALS } from "@/lib/constants";
 export function useHBARDeposit(vaultAddress?: Address) {
-  const { sendTransaction, data: hash, isPending, error } = useSendTransaction();
+  const {
+    sendTransaction,
+    data: hash,
+    isPending,
+    error,
+  } = useSendTransaction();
   const { refetchHbarBalance } = useUserVaultData(vaultAddress);
-  
+
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
@@ -24,7 +29,7 @@ export function useHBARDeposit(vaultAddress?: Address) {
 
     // Convert HBAR to tinybars (18 decimals)
     const amountInTinybars = parseUnits(amount, ETH_DECIMALS);
-    
+
     // Send HBAR directly to vault address (uses receive() function)
     sendTransaction({
       to: vaultAddress,
@@ -45,9 +50,10 @@ export function useHBARDeposit(vaultAddress?: Address) {
 
 export function useHBARWithdraw(vaultAddress?: Address) {
   const { address } = useAccount();
-  const { withdrawHBAR, isPending, isSuccess, error, hash } = useUserVaultWrite(vaultAddress);
+  const { withdrawHBAR, isPending, isSuccess, error, hash } =
+    useUserVaultWrite(vaultAddress);
   const { refetchHbarBalance } = useUserVaultData(vaultAddress);
-  
+
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({
     hash,
   });
@@ -63,7 +69,7 @@ export function useHBARWithdraw(vaultAddress?: Address) {
     }
 
     // Convert HBAR to tinybars
-    const amountInTinybars = parseUnits(amount, HBAR_DECIMALS);
+    const amountInTinybars = parseUnits(amount, ETH_DECIMALS);
 
     await withdrawHBAR(amountInTinybars, recipientAddress);
   };

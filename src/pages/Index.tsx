@@ -24,7 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VaultCreationModal } from "@/components/vault/VaultCreationFlow";
 import { DEFAULT_PRICE_FEED_ID } from "@/lib/contracts/abis";
-import { USER_THERSHOLD, HBAR_DECIMALS } from "@/lib/constants";
+import { USER_THRESHOLD, ETH_DECIMALS } from "@/lib/constants";
 
 const Dashboard = () => {
   const { address: userAddress, isConnected } = useAccount();
@@ -58,7 +58,9 @@ const Dashboard = () => {
   const totalDeposited = useMemo(() => {
     if (!hasVault || !vaultData.hbarBalanceRaw || !hbarPrice) return "0.00";
 
-    const hbarAmount = parseFloat(formatUnits(vaultData.hbarBalanceRaw, HBAR_DECIMALS));
+    const hbarAmount = parseFloat(
+      formatUnits(vaultData.hbarBalanceRaw, ETH_DECIMALS)
+    );
     const usdValue = hbarAmount * hbarPrice.priceUSD;
 
     return usdValue.toFixed(2);
@@ -68,7 +70,9 @@ const Dashboard = () => {
   const walletValueUSD = useMemo(() => {
     if (!walletBalance || !hbarPrice) return "0.00";
 
-    const hbarAmount = parseFloat(formatUnits(walletBalance.value, HBAR_DECIMALS));
+    const hbarAmount = parseFloat(
+      formatUnits(walletBalance.value, ETH_DECIMALS)
+    );
     const usdValue = hbarAmount * hbarPrice.priceUSD;
 
     return usdValue.toFixed(2);
@@ -190,9 +194,9 @@ const Dashboard = () => {
                 </p>
                 <p className="text-2xl font-bold">
                   {walletBalance
-                    ? parseFloat(formatUnits(walletBalance.value, HBAR_DECIMALS)).toFixed(
-                        4
-                      )
+                    ? parseFloat(
+                        formatUnits(walletBalance.value, ETH_DECIMALS)
+                      ).toFixed(4)
                     : "0.0000"}{" "}
                   ℏ
                 </p>
@@ -294,7 +298,7 @@ const Dashboard = () => {
 
         {/* Volatility Monitor */}
         <VolatilityMonitor
-          threshold={USER_THERSHOLD}
+          threshold={USER_THRESHOLD}
           priceFeedId={DEFAULT_PRICE_FEED_ID}
         />
 

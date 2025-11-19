@@ -1,43 +1,56 @@
 // components/vault/HBARWithdrawModal.tsx
 
 import { useState, useEffect, useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowUpFromLine, Loader2, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
+import {
+  ArrowUpFromLine,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  AlertTriangle,
+} from "lucide-react";
 import { useHBARWithdraw } from "@/hooks/useHBAROperations";
-import { formatAmountInput, useHBARWithdrawValidation, useRecipientValidation } from "@/hooks/useBalanceValidation";
+import {
+  formatAmountInput,
+  useHBARWithdrawValidation,
+  useRecipientValidation,
+} from "@/hooks/useBalanceValidation";
 import { useUserVaultData } from "@/hooks/useContracts";
 import { formatUnits } from "viem";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
+import { ETH_DECIMALS } from "@/lib/constants";
 
-const HBAR_DECIMALS = 8;
 interface HBARWithdrawModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   vaultAddress: Address;
 }
 
-export function HBARWithdrawModal({ open, onOpenChange, vaultAddress }: HBARWithdrawModalProps) {
+export function HBARWithdrawModal({
+  open,
+  onOpenChange,
+  vaultAddress,
+}: HBARWithdrawModalProps) {
   const [amount, setAmount] = useState("");
-  const [recipient, setRecipient] = useState<Address | "">("");
+  const [recipient, setRecipient] = useState<Address>("0x0000000000000000000000000000000000000000");
   const [showValidation, setShowValidation] = useState(false);
 
   const { address } = useAccount();
   const { hbarBalanceRaw, refetchHbarBalance } = useUserVaultData(vaultAddress);
-  const { validate: validateAmount } = useHBARWithdrawValidation(vaultAddress);
+  const { validate: validateAmount } = useHBARWithdrawValidation();
   const { validate: validateRecipient } = useRecipientValidation();
-  const { 
-    withdraw, 
-    isPending, 
-    isConfirming, 
-    isSuccess, 
-    error, 
-    hash 
-  } = useHBARWithdraw(vaultAddress);
+  const { withdraw, isPending, isConfirming, isSuccess, error, hash } =
+    useHBARWithdraw(vaultAddress);
 
   // Auto-fill recipient with connected address
   useEffect(() => {
@@ -87,7 +100,7 @@ export function HBARWithdrawModal({ open, onOpenChange, vaultAddress }: HBARWith
   }, [open]);
 
   const handleAmountChange = (value: string) => {
-    const formatted = formatAmountInput(value, HBAR_DECIMALS);
+    const formatted = formatAmountInput(value, ETH_DECIMALS);
     setAmount(formatted);
     setShowValidation(true);
   };
@@ -98,7 +111,7 @@ export function HBARWithdrawModal({ open, onOpenChange, vaultAddress }: HBARWith
   };
 
   const handleMaxClick = () => {
-    const maxAmount = formatUnits(hbarBalanceRaw, HBAR_DECIMALS);
+    const maxAmount = formatUnits(hbarBalanceRaw, ETH_DECIMALS);
     setAmount(maxAmount);
     setShowValidation(true);
   };
@@ -117,7 +130,7 @@ export function HBARWithdrawModal({ open, onOpenChange, vaultAddress }: HBARWith
     }
   };
 
-  const currentBalance = formatUnits(hbarBalanceRaw, HBAR_DECIMALS);
+  const currentBalance = formatUnits(hbarBalanceRaw, ETH_DECIMALS);
   const canWithdraw = isFormValid && !isPending && !isConfirming && !isSuccess;
 
   return (
@@ -130,8 +143,12 @@ export function HBARWithdrawModal({ open, onOpenChange, vaultAddress }: HBARWith
         <div className="space-y-6">
           {/* Balance Info */}
           <div className="p-4 bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-lg border">
-            <p className="text-xs text-muted-foreground mb-1">Available to Withdraw</p>
-            <p className="text-2xl font-bold">{parseFloat(currentBalance).toFixed(8)} HBAR</p>
+            <p className="text-xs text-muted-foreground mb-1">
+              Available to Withdraw
+            </p>
+            <p className="text-2xl font-bold">
+              {parseFloat(currentBalance).toFixed(2)} HBAR
+            </p>
           </div>
 
           {/* Recipient Address */}
@@ -177,7 +194,7 @@ export function HBARWithdrawModal({ open, onOpenChange, vaultAddress }: HBARWith
                 disabled={isPending || isConfirming}
                 className="h-auto p-0 text-xs"
               >
-                Max: {parseFloat(currentBalance).toFixed(8)}
+                Max: {parseFloat(currentBalance).toFixed(2)}
               </Button>
             </div>
             <div className="relative">
@@ -185,7 +202,7 @@ export function HBARWithdrawModal({ open, onOpenChange, vaultAddress }: HBARWith
                 id="amount"
                 type="text"
                 inputMode="decimal"
-                placeholder="0.00000000"
+                placeholder="0.00"
                 value={amount}
                 onChange={(e) => handleAmountChange(e.target.value)}
                 disabled={isPending || isConfirming}
@@ -209,24 +226,34 @@ export function HBARWithdrawModal({ open, onOpenChange, vaultAddress }: HBARWith
             </Alert>
           )}
 
-          {showValidation && amountValidation.warning && amountValidation.isValid && (
-            <Alert className="border-yellow-500">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription>{amountValidation.warning}</AlertDescription>
-            </Alert>
-          )}
+          {showValidation &&
+            amountValidation.warning &&
+            amountValidation.isValid && (
+              <Alert className="border-yellow-500">
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription>{amountValidation.warning}</AlertDescription>
+              </Alert>
+            )}
 
           {/* Transaction Summary */}
           {amount && parseFloat(amount) > 0 && recipient && isFormValid && (
             <div className="p-4 bg-muted/50 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">You will receive</span>
-                <span className="font-medium">{parseFloat(amount).toFixed(8)} HBAR</span>
+                <span className="font-medium">
+                  {parseFloat(amount).toFixed(2)} HBAR
+                </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Remaining vault balance</span>
+                <span className="text-muted-foreground">
+                  Remaining vault balance
+                </span>
                 <span className="font-medium">
-                  {Math.max(0, parseFloat(currentBalance) - parseFloat(amount)).toFixed(8)} HBAR
+                  {Math.max(
+                    0,
+                    parseFloat(currentBalance) - parseFloat(amount)
+                  ).toFixed(2)}{" "}
+                  HBAR
                 </span>
               </div>
               <div className="flex justify-between text-sm border-t pt-2 mt-2">

@@ -1,77 +1,118 @@
-// components/vault/HBARDepositModal.tsx - Enhanced Version
+// components/vault/ERC20DepositModal.tsx
 import { useState, useEffect, useMemo } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  ArrowDownToLine,
-  Loader2,
-  CheckCircle,
-  AlertCircle,
-  AlertTriangle,
+import { 
+  ArrowDownToLine, 
+  Loader2, 
+  CheckCircle, 
+  AlertCircle, 
+  AlertTriangle, 
   Info,
+  Coins 
 } from "lucide-react";
-import { useHBARDeposit } from "@/hooks/useHBAROperations";
+import { useERC20Deposit, useERC20TokenInfo } from "@/hooks/useERC20Operations";
 import { useUserVaultData } from "@/hooks/useContracts";
-import {
-  useHBARDepositValidation,
-  formatAmountInput,
-  calculateMaxWithGas,
-} from "@/hooks/useBalanceValidation";
 import { formatUnits } from "viem";
 import type { Address } from "viem";
-import { ETH_DECIMALS } from "@/lib/constants";
+import { useAccount } from "wagmi";
 
-interface HBARDepositModalProps {
+interface ERC20DepositModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   vaultAddress: Address;
+  tokenAddress: Address;
 }
 
-export function HBARDepositModal({
-  open,
-  onOpenChange,
+export function ERC20DepositModal({ 
+  open, 
+  onOpenChange, 
   vaultAddress,
-}: HBARDepositModalProps) {
+  tokenAddress 
+}: ERC20DepositModalProps) {
   const [amount, setAmount] = useState("");
   const [showValidation, setShowValidation] = useState(false);
 
-  const { hbarBalanceRaw, refetchHbarBalance } = useUserVaultData(vaultAddress);
-  const { validate, walletBalance } = useHBARDepositValidation();
-  const { depositHBAR, isPending, isConfirming, isSuccess, error, hash } =
-    useHBARDeposit(vaultAddress);
+  const { address: userAddress } = useAccount();
+  const { erc20BalanceRaw, refetchHbarBalance } = useUserVaultData(vaultAddress);
+  const { 
+    decimals, 
+    symbol, 
+    name,
+    balance: userBalance,
+    refetchBalance: refetchUserBalance 
+  } = useERC20TokenInfo(tokenAddress, userAddress);
+  
+  const { 
+    depositTokens, 
+    isPending, 
+    isConfirming, 
+    isSuccess, 
+    error, 
+    hash,
+    refetchBalance 
+  } = useERC20Deposit(vaultAddress, tokenAddress);
+
+  // Format balances
+  const vaultBalance = formatUnits(erc20BalanceRaw, decimals);
+  const walletBalance = formatUnits(userBalance, decimals);
 
   // Validate amount
   const validation = useMemo(() => {
     if (!showValidation || !amount) return { isValid: true };
-    return validate(amount);
-  }, [amount, showValidation, validate]);
 
-  // Format wallet balance
-  const walletHBAR = walletBalance
-    ? formatUnits(walletBalance.value, ETH_DECIMALS)
-    : "0";
+    const numAmount = parseFloat(amount);
 
-  // Calculate max deposit (wallet balance - gas reserve)
-  const maxDeposit = walletBalance
-    ? calculateMaxWithGas(walletBalance.value, ETH_DECIMALS)
-    : "0";
+    // Check if valid number
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return { 
+        isValid: false, 
+        error: "Please enter a valid amount greater than 0" 
+      };
+    }
 
-  // Refetch balance after successful deposit
+    // Check decimal places
+    const decimalPlaces = amount.split('.')[1]?.length || 0;
+    if (decimalPlaces > decimals) {
+      return { 
+        isValid: false, 
+        error: `Maximum ${decimals} decimal places allowed` 
+      };
+    }
+
+    // Check if exceeds balance
+    const maxBalance = parseFloat(walletBalance);
+    if (numAmount > maxBalance) {
+      return { 
+        isValid: false, 
+        error: `Amount exceeds wallet balance (${maxBalance} ${symbol})` 
+      };
+    }
+
+    // Warning for depositing entire balance
+    if (numAmount === maxBalance) {
+      return { 
+        isValid: true,
+        warning: "You're depositing your entire balance. Ensure you have HBAR for gas fees." 
+      };
+    }
+
+    return { isValid: true };
+  }, [amount, showValidation, walletBalance, decimals, symbol]);
+
+  // Refetch balances after successful deposit
   useEffect(() => {
     if (isSuccess) {
       setTimeout(() => {
+        refetchBalance();
+        refetchUserBalance();
         refetchHbarBalance();
       }, 2000);
     }
-  }, [isSuccess, refetchHbarBalance]);
+  }, [isSuccess, refetchBalance, refetchUserBalance, refetchHbarBalance]);
 
   // Reset and close after success
   useEffect(() => {
@@ -92,59 +133,75 @@ export function HBARDepositModal({
   }, [open]);
 
   const handleAmountChange = (value: string) => {
-    const formatted = formatAmountInput(value, ETH_DECIMALS);
+    // Allow only numbers and decimal point
+    const formatted = value.replace(/[^\d.]/g, '');
+    
+    // Prevent multiple decimal points
+    const parts = formatted.split('.');
+    if (parts.length > 2) return;
+    
+    // Limit decimal places
+    if (parts[1] && parts[1].length > decimals) return;
+    
     setAmount(formatted);
     setShowValidation(true);
   };
 
   const handleMaxClick = () => {
-    setAmount(maxDeposit);
+    setAmount(walletBalance);
     setShowValidation(true);
   };
 
   const handleDeposit = async () => {
     setShowValidation(true);
-
-    const validationResult = validate(amount);
-    if (!validationResult.isValid) {
+    
+    if (!validation.isValid) {
       return;
     }
 
     try {
-      await depositHBAR(amount);
+      await depositTokens(amount);
     } catch (err) {
       console.error("Deposit failed:", err);
     }
   };
 
-  const currentBalance = formatUnits(hbarBalanceRaw, ETH_DECIMALS);
-  const canDeposit =
-    validation.isValid && !isPending && !isConfirming && !isSuccess;
+  const canDeposit = validation.isValid && !isPending && !isConfirming && !isSuccess;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Deposit HBAR to Vault</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Coins className="w-5 h-5" />
+            Deposit {symbol || "ERC20"} to Vault
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Token Info */}
+          {name && (
+            <div className="p-3 bg-muted/50 rounded-lg border">
+              <p className="text-xs text-muted-foreground mb-1">Token</p>
+              <p className="font-medium">{name} ({symbol})</p>
+              <p className="text-xs text-muted-foreground mt-1 font-mono truncate">
+                {tokenAddress}
+              </p>
+            </div>
+          )}
+
           {/* Balance Info */}
           <div className="grid grid-cols-2 gap-4">
             <div className="p-3 bg-muted rounded-lg">
-              <p className="text-xs text-muted-foreground mb-1">
-                Wallet Balance
-              </p>
+              <p className="text-xs text-muted-foreground mb-1">Wallet Balance</p>
               <p className="text-sm font-bold">
-                {parseFloat(walletHBAR).toFixed(2)} HBAR
+                {parseFloat(walletBalance).toFixed(Math.min(2, decimals))} {symbol}
               </p>
             </div>
             <div className="p-3 bg-muted rounded-lg">
-              <p className="text-xs text-muted-foreground mb-1">
-                Vault Balance
-              </p>
+              <p className="text-xs text-muted-foreground mb-1">Vault Balance</p>
               <p className="text-sm font-bold">
-                {parseFloat(currentBalance).toFixed(2)} HBAR
+                {parseFloat(vaultBalance).toFixed(Math.min(2, decimals))} {symbol}
               </p>
             </div>
           </div>
@@ -152,7 +209,7 @@ export function HBARDepositModal({
           {/* Amount Input */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <Label htmlFor="amount">Amount (HBAR)</Label>
+              <Label htmlFor="amount">Amount ({symbol})</Label>
               <Button
                 variant="link"
                 size="sm"
@@ -160,7 +217,7 @@ export function HBARDepositModal({
                 disabled={isPending || isConfirming}
                 className="h-auto p-0 text-xs"
               >
-                Max: {parseFloat(maxDeposit).toFixed(2)}
+                Max: {parseFloat(walletBalance).toFixed(Math.min(2, decimals))}
               </Button>
             </div>
             <div className="relative">
@@ -168,7 +225,7 @@ export function HBARDepositModal({
                 id="amount"
                 type="text"
                 inputMode="decimal"
-                placeholder="0.00"
+                placeholder={`0.${'0'.repeat(Math.min(2, decimals))}`}
                 value={amount}
                 onChange={(e) => handleAmountChange(e.target.value)}
                 disabled={isPending || isConfirming}
@@ -178,13 +235,13 @@ export function HBARDepositModal({
                     : ""
                 }
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                HBAR
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
+                {symbol}
               </div>
             </div>
             <div className="flex items-start gap-2 text-xs text-muted-foreground">
               <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
-              <span>Min: 1 HBAR • 8 decimal places</span>
+              <span>Decimals: {decimals} • Min: {(1 / Math.pow(10, decimals)).toFixed(decimals)}</span>
             </div>
           </div>
 
@@ -209,23 +266,19 @@ export function HBARDepositModal({
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">You will deposit</span>
                 <span className="font-medium">
-                  {parseFloat(amount).toFixed(2)} HBAR
+                  {parseFloat(amount).toFixed(Math.min(2, decimals))} {symbol}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">New vault balance</span>
                 <span className="font-medium">
-                  {(parseFloat(currentBalance) + parseFloat(amount)).toFixed(2)}{" "}
-                  HBAR
+                  {(parseFloat(vaultBalance) + parseFloat(amount)).toFixed(Math.min(2, decimals))} {symbol}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  Remaining wallet balance
-                </span>
+                <span className="text-muted-foreground">Remaining wallet balance</span>
                 <span className="font-medium">
-                  {(parseFloat(walletHBAR) - parseFloat(amount)).toFixed(2)}{" "}
-                  HBAR
+                  {(parseFloat(walletBalance) - parseFloat(amount)).toFixed(Math.min(2, decimals))} {symbol}
                 </span>
               </div>
               <div className="flex justify-between text-sm border-t pt-2 mt-2">
@@ -249,7 +302,7 @@ export function HBARDepositModal({
             <Alert>
               <Loader2 className="h-4 w-4 animate-spin" />
               <AlertDescription>
-                Transaction submitted. Confirming on Hedera network...
+                Transaction submitted. Confirming on network...
                 {hash && (
                   <a
                     href={`https://hashscan.io/testnet/transaction/${hash}`}
@@ -323,7 +376,7 @@ export function HBARDepositModal({
               ) : (
                 <>
                   <ArrowDownToLine className="mr-2 h-4 w-4" />
-                  Deposit HBAR
+                  Deposit {symbol}
                 </>
               )}
             </Button>
@@ -333,12 +386,3 @@ export function HBARDepositModal({
     </Dialog>
   );
 }
-
-// components/vault/HBARWithdrawModal.tsx - Enhanced Version
-import { useAccount } from "wagmi";
-import { useHBARWithdraw } from "@/hooks/useHBAROperations";
-import {
-  useHBARWithdrawValidation,
-  useRecipientValidation,
-} from "@/hooks/useBalanceValidation";
-import { ArrowUpFromLine } from "lucide-react";

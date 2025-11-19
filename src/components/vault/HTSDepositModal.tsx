@@ -1,27 +1,34 @@
 // components/vault/HTSDepositModal.tsx - Enhanced Version
 import { useState, useEffect, useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  ArrowDownToLine, 
-  Loader2, 
-  CheckCircle, 
-  AlertCircle, 
-  AlertTriangle, 
+import {
+  ArrowDownToLine,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  AlertTriangle,
   Info,
-  Link as LinkIcon 
+  Link as LinkIcon,
 } from "lucide-react";
 import { useHTSDeposit } from "@/hooks/useHTSTokenOperations";
 import { useTokenBalance, useTokenAssociation } from "@/hooks/useContracts";
-import { useHTSDepositValidation, formatAmountInput } from "@/hooks/useBalanceValidation";
+import {
+  useHTSDepositValidation,
+  formatAmountInput,
+} from "@/hooks/useBalanceValidation";
 import { formatUnits } from "viem";
 import type { Address } from "viem";
 import { TokenAssociationModal } from "./TokenAssociationModal";
-
-const HTS_DECIMALS = 8;
+import { ETH_DECIMALS } from "@/lib/constants";
 
 interface HTSDepositModalProps {
   open: boolean;
@@ -45,8 +52,11 @@ export function HTSDepositModal({
   const [showAssociation, setShowAssociation] = useState(false);
 
   const { isVaultAssociated } = useTokenAssociation(vaultAddress, tokenAddress);
-  const { trackedBalance, refetchTracked } = useTokenBalance(vaultAddress, tokenAddress);
-  const { validate } = useHTSDepositValidation(vaultAddress, tokenAddress);
+  const { trackedBalance, refetchTracked } = useTokenBalance(
+    vaultAddress,
+    tokenAddress
+  );
+  const { validate } = useHTSDepositValidation();
   const {
     depositTokens,
     isPending,
@@ -98,14 +108,14 @@ export function HTSDepositModal({
   }, [open]);
 
   const handleAmountChange = (value: string) => {
-    const formatted = formatAmountInput(value, HTS_DECIMALS);
+    const formatted = formatAmountInput(value, ETH_DECIMALS);
     setAmount(formatted);
     setShowValidation(true);
   };
 
   const handleMaxClick = () => {
     if (userTokenBalance) {
-      const maxAmount = formatUnits(userTokenBalance, HTS_DECIMALS);
+      const maxAmount = formatUnits(userTokenBalance, ETH_DECIMALS);
       setAmount(maxAmount);
       setShowValidation(true);
     }
@@ -131,15 +141,16 @@ export function HTSDepositModal({
     }
   };
 
-  const currentVaultBalance = formatUnits(BigInt(trackedBalance), HTS_DECIMALS);
-  const currentUserBalance = userTokenBalance 
-    ? formatUnits(userTokenBalance, HTS_DECIMALS)
+  const currentVaultBalance = formatUnits(BigInt(trackedBalance), ETH_DECIMALS);
+  const currentUserBalance = userTokenBalance
+    ? formatUnits(userTokenBalance, ETH_DECIMALS)
     : "0";
 
-  const canDeposit = validation.isValid && 
-    isVaultAssociated && 
-    !isPending && 
-    !isConfirming && 
+  const canDeposit =
+    validation.isValid &&
+    isVaultAssociated &&
+    !isPending &&
+    !isConfirming &&
     !isSuccess;
 
   return (
@@ -183,15 +194,19 @@ export function HTSDepositModal({
             {/* Balance Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-muted rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">Your Balance</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  Your Balance
+                </p>
                 <p className="text-sm font-bold">
-                  {parseFloat(currentUserBalance).toFixed(8)} {tokenSymbol}
+                  {parseFloat(currentUserBalance).toFixed(2)} {tokenSymbol}
                 </p>
               </div>
               <div className="p-3 bg-muted rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">Vault Balance</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  Vault Balance
+                </p>
                 <p className="text-sm font-bold">
-                  {parseFloat(currentVaultBalance).toFixed(8)} {tokenSymbol}
+                  {parseFloat(currentVaultBalance).toFixed(2)} {tokenSymbol}
                 </p>
               </div>
             </div>
@@ -205,13 +220,22 @@ export function HTSDepositModal({
                     HTS Token Information
                   </p>
                   <p className="text-blue-700 dark:text-blue-300">
-                    Address: <code className="text-xs">{tokenAddress.slice(0, 10)}...{tokenAddress.slice(-8)}</code>
+                    Address:{" "}
+                    <code className="text-xs">
+                      {tokenAddress.slice(0, 10)}...{tokenAddress.slice(-8)}
+                    </code>
                   </p>
                   <p className="text-blue-700 dark:text-blue-300">
-                    Status: {isVaultAssociated ? 
-                      <span className="text-green-600 font-semibold">✓ Associated</span> : 
-                      <span className="text-orange-600 font-semibold">⚠ Not Associated</span>
-                    }
+                    Status:{" "}
+                    {isVaultAssociated ? (
+                      <span className="text-green-600 font-semibold">
+                        ✓ Associated
+                      </span>
+                    ) : (
+                      <span className="text-orange-600 font-semibold">
+                        ⚠ Not Associated
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -229,7 +253,7 @@ export function HTSDepositModal({
                     disabled={isPending || isConfirming || !isVaultAssociated}
                     className="h-auto p-0 text-xs"
                   >
-                    Max: {parseFloat(currentUserBalance).toFixed(8)}
+                    Max: {parseFloat(currentUserBalance).toFixed(2)}
                   </Button>
                 )}
               </div>
@@ -238,7 +262,7 @@ export function HTSDepositModal({
                   id="amount"
                   type="text"
                   inputMode="decimal"
-                  placeholder="0.00000000"
+                  placeholder="0.00"
                   value={amount}
                   onChange={(e) => handleAmountChange(e.target.value)}
                   disabled={isPending || isConfirming || !isVaultAssociated}
@@ -254,7 +278,7 @@ export function HTSDepositModal({
               </div>
               <div className="flex items-start gap-2 text-xs text-muted-foreground">
                 <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                <span>Min: 0.00000001 • HTS tokens use 8 decimal places</span>
+                <span>Min: 1 • HTS tokens use 8 decimal places</span>
               </div>
             </div>
 
@@ -274,30 +298,46 @@ export function HTSDepositModal({
             )}
 
             {/* Transaction Summary */}
-            {amount && parseFloat(amount) > 0 && validation.isValid && isVaultAssociated && (
-              <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Depositing</span>
-                  <span className="font-medium">{parseFloat(amount).toFixed(8)} {tokenSymbol}</span>
+            {amount &&
+              parseFloat(amount) > 0 &&
+              validation.isValid &&
+              isVaultAssociated && (
+                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Depositing</span>
+                    <span className="font-medium">
+                      {parseFloat(amount).toFixed(2)} {tokenSymbol}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      New vault balance
+                    </span>
+                    <span className="font-medium">
+                      {(
+                        parseFloat(currentVaultBalance) + parseFloat(amount)
+                      ).toFixed(2)}{" "}
+                      {tokenSymbol}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Remaining wallet balance
+                    </span>
+                    <span className="font-medium">
+                      {Math.max(
+                        0,
+                        parseFloat(currentUserBalance) - parseFloat(amount)
+                      ).toFixed(2)}{" "}
+                      {tokenSymbol}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm border-t pt-2 mt-2">
+                    <span className="text-muted-foreground">Gas fee</span>
+                    <span className="font-medium">~0.05 HBAR</span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">New vault balance</span>
-                  <span className="font-medium">
-                    {(parseFloat(currentVaultBalance) + parseFloat(amount)).toFixed(8)} {tokenSymbol}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Remaining wallet balance</span>
-                  <span className="font-medium">
-                    {Math.max(0, parseFloat(currentUserBalance) - parseFloat(amount)).toFixed(8)} {tokenSymbol}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm border-t pt-2 mt-2">
-                  <span className="text-muted-foreground">Gas fee</span>
-                  <span className="font-medium">~0.05 HBAR</span>
-                </div>
-              </div>
-            )}
+              )}
 
             {/* Status Messages */}
             {isPending && (
@@ -410,6 +450,8 @@ export function HTSDepositModal({
 // components/vault/HTSWithdrawModal.tsx - Enhanced Version
 import { useAccount } from "wagmi";
 import { useHTSWithdraw } from "@/hooks/useHTSTokenOperations";
-import { useHTSWithdrawValidation, useRecipientValidation } from "@/hooks/useBalanceValidation";
+import {
+  useHTSWithdrawValidation,
+  useRecipientValidation,
+} from "@/hooks/useBalanceValidation";
 import { ArrowUpFromLine } from "lucide-react";
-

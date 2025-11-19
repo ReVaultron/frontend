@@ -33,7 +33,7 @@ import { formatUnits, parseEther } from "viem";
 import { usePythPrice } from "@/hooks/usePythPrices";
 import { PYTH_PRICE_FEEDS } from "@/lib/pyth/price-feeds";
 import { VaultCreationModal } from "@/components/vault/VaultCreationFlow";
-import { HBAR_DECIMALS } from "@/lib/constants";
+import { ETH_DECIMALS } from "@/lib/constants";
 
 const Vaults = () => {
   const navigate = useNavigate();
@@ -41,10 +41,7 @@ const Vaults = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Get user's vault address
-  const {
-    vaultAddress,
-    hasVault,
-  } = useUserVaultAddress(userAddress);
+  const { vaultAddress, hasVault } = useUserVaultAddress(userAddress);
 
   // Get vault data if exists
   const vaultData = useUserVaultData(hasVault ? vaultAddress : undefined);
@@ -67,7 +64,9 @@ const Vaults = () => {
   const vaultValueUSD = useMemo(() => {
     if (!hbarPrice || !vaultData.hbarBalanceRaw) return "0.00";
 
-    const hbarAmount = parseFloat(formatUnits(vaultData.hbarBalanceRaw, HBAR_DECIMALS));
+    const hbarAmount = parseFloat(
+      formatUnits(vaultData.hbarBalanceRaw, ETH_DECIMALS)
+    );
     return (hbarAmount * hbarPrice.priceUSD).toFixed(2);
   }, [hbarPrice, vaultData.hbarBalanceRaw]);
 

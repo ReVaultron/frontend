@@ -1,11 +1,9 @@
 // hooks/useBalanceValidation.ts
 import { useAccount, useBalance } from "wagmi";
-import { parseUnits, formatUnits } from "viem";
+import { parseUnits, formatUnits, isAddress } from "viem";
 import type { Address } from "viem";
-
-const ETH_DECIMALS = 18;
-const HBAR_DECIMALS = 8;
-const HTS_DECIMALS = 8;
+import { useMemo } from "react";
+import{ ETH_DECIMALS } from "@/lib/constants";
 
 // Minimum amounts to prevent dust
 const MIN_HBAR_AMOUNT = "0.00000001"; // 1 tinybar
@@ -49,13 +47,13 @@ export function useHBARDepositValidation() {
 
     // Check maximum (int64)
     try {
-      const amountInTinybars = parseUnits(amount, HBAR_DECIMALS);
+      const amountInTinybars = parseUnits(amount, ETH_DECIMALS);
       if (amountInTinybars > MAX_INT64) {
         return {
           isValid: false,
           error: `Amount exceeds maximum value (${formatUnits(
             MAX_INT64,
-            HBAR_DECIMALS
+            ETH_DECIMALS
           )} HBAR)`,
         };
       }
@@ -130,7 +128,7 @@ export function useHBARWithdrawValidation() {
     }
 
     // Check vault balance
-    const vaultHBAR = parseFloat(formatUnits(vaultBalance, HBAR_DECIMALS));
+    const vaultHBAR = parseFloat(formatUnits(vaultBalance, ETH_DECIMALS));
 
     if (vaultHBAR === 0) {
       return {
@@ -150,7 +148,7 @@ export function useHBARWithdrawValidation() {
 
     // Check int64 max
     try {
-      const amountInTinybars = parseUnits(amount, HBAR_DECIMALS);
+      const amountInTinybars = parseUnits(amount, ETH_DECIMALS);
       if (amountInTinybars > MAX_INT64) {
         return {
           isValid: false,
@@ -209,13 +207,13 @@ export function useHTSDepositValidation() {
 
     // Check int64 max (HTS uses int64)
     try {
-      const amountInSmallestUnit = parseUnits(amount, HTS_DECIMALS);
+      const amountInSmallestUnit = parseUnits(amount, ETH_DECIMALS);
       if (amountInSmallestUnit > MAX_INT64) {
         return {
           isValid: false,
           error: `Amount exceeds maximum value (${formatUnits(
             MAX_INT64,
-            HTS_DECIMALS
+            ETH_DECIMALS
           )} tokens)`,
         };
       }
@@ -226,7 +224,7 @@ export function useHTSDepositValidation() {
     // Check user balance if provided
     if (userTokenBalance !== undefined) {
       const userBalance = parseFloat(
-        formatUnits(userTokenBalance, HTS_DECIMALS)
+        formatUnits(userTokenBalance, ETH_DECIMALS)
       );
 
       if (userBalance === 0) {
@@ -289,7 +287,7 @@ export function useHTSWithdrawValidation() {
 
     // Check vault balance
     const vaultBalance = parseFloat(
-      formatUnits(vaultTokenBalance, HTS_DECIMALS)
+      formatUnits(vaultTokenBalance, ETH_DECIMALS)
     );
 
     if (vaultBalance === 0) {
@@ -310,7 +308,7 @@ export function useHTSWithdrawValidation() {
 
     // Check int64 max
     try {
-      const amountInSmallestUnit = parseUnits(amount, HTS_DECIMALS);
+      const amountInSmallestUnit = parseUnits(amount, ETH_DECIMALS);
       if (amountInSmallestUnit > MAX_INT64) {
         return {
           isValid: false,
@@ -335,6 +333,290 @@ export function useHTSWithdrawValidation() {
   return { validate };
 }
 
+/**
+ * Validate ERC20 deposit amount
+ */
+export function useERC20DepositValidation(
+  tokenDecimals: number = 18,
+  userBalance?: bigint
+) {
+  const validate = useMemo(() => {
+    return (amount: string): ValidationResult => {
+      if (!amount || amount === "") {
+        return { isValid: false, error: "Amount is required" };
+      }
+
+      const numAmount = parseFloat(amount);
+
+      // Check if valid number
+      if (isNaN(numAmount) || numAmount <= 0) {
+        return {
+          isValid: false,
+          error: "Please enter a valid amount greater than 0",
+        };
+      }
+
+      // Check decimal places
+      const decimalPlaces = amount.split(".")[1]?.length || 0;
+      if (decimalPlaces > tokenDecimals) {
+        return {
+          isValid: false,
+          error: `Maximum ${tokenDecimals} decimal places allowed`,
+        };
+      }
+
+      // Check minimum amount (1 smallest unit)
+      const minAmount = 1 / Math.pow(10, tokenDecimals);
+      if (numAmount < minAmount) {
+        return {
+          isValid: false,
+          error: `Minimum amount is ${minAmount.toFixed(tokenDecimals)}`,
+        };
+      }
+
+      // Check if exceeds balance
+      if (userBalance) {
+        const amountInSmallestUnit = parseUnits(amount, tokenDecimals);
+        if (amountInSmallestUnit > userBalance) {
+          const balanceFormatted = formatUnits(userBalance, tokenDecimals);
+          return {
+            isValid: false,
+            error: `Amount exceeds wallet balance (${balanceFormatted})`,
+          };
+        }
+
+        // Warning for depositing entire balance
+        if (amountInSmallestUnit === userBalance) {
+          return {
+            isValid: true,
+            warning:
+              "You're depositing your entire balance. Ensure you have HBAR for gas fees.",
+          };
+        }
+      }
+
+      return { isValid: true };
+    };
+  }, [tokenDecimals, userBalance]);
+
+  return { validate };
+}
+
+/**
+ * Validate ERC20 withdrawal amount
+ */
+export function useERC20WithdrawValidation(
+  tokenDecimals: number = 18,
+  vaultBalance?: bigint
+) {
+  const validate = useMemo(() => {
+    return (amount: string): ValidationResult => {
+      if (!amount || amount === "") {
+        return { isValid: false, error: "Amount is required" };
+      }
+
+      const numAmount = parseFloat(amount);
+
+      // Check if valid number
+      if (isNaN(numAmount) || numAmount <= 0) {
+        return {
+          isValid: false,
+          error: "Please enter a valid amount greater than 0",
+        };
+      }
+
+      // Check decimal places
+      const decimalPlaces = amount.split(".")[1]?.length || 0;
+      if (decimalPlaces > tokenDecimals) {
+        return {
+          isValid: false,
+          error: `Maximum ${tokenDecimals} decimal places allowed`,
+        };
+      }
+
+      // Check minimum amount
+      const minAmount = 1 / Math.pow(10, tokenDecimals);
+      if (numAmount < minAmount) {
+        return {
+          isValid: false,
+          error: `Minimum amount is ${minAmount.toFixed(tokenDecimals)}`,
+        };
+      }
+
+      // Check if exceeds vault balance
+      if (vaultBalance) {
+        const amountInSmallestUnit = parseUnits(amount, tokenDecimals);
+        if (amountInSmallestUnit > vaultBalance) {
+          const balanceFormatted = formatUnits(vaultBalance, tokenDecimals);
+          return {
+            isValid: false,
+            error: `Amount exceeds vault balance (${balanceFormatted})`,
+          };
+        }
+
+        // Warning for withdrawing entire balance
+        if (amountInSmallestUnit === vaultBalance && vaultBalance > BigInt(0)) {
+          return {
+            isValid: true,
+            warning: "You're withdrawing your entire vault balance.",
+          };
+        }
+      }
+
+      return { isValid: true };
+    };
+  }, [tokenDecimals, vaultBalance]);
+
+  return { validate };
+}
+
+/**
+ * Validate ERC20 recipient address
+ */
+export function useERC20RecipientValidation() {
+  const { address: connectedAddress } = useAccount();
+
+  const validate = useMemo(() => {
+    return (recipient: string): ValidationResult => {
+      if (!recipient || recipient === "") {
+        return { isValid: false, error: "Recipient address is required" };
+      }
+
+      if (!isAddress(recipient)) {
+        return {
+          isValid: false,
+          error: "Invalid Ethereum address format",
+        };
+      }
+
+      // Check for zero address
+      if (
+        recipient.toLowerCase() === "0x0000000000000000000000000000000000000000"
+      ) {
+        return {
+          isValid: false,
+          error: "Cannot send to zero address",
+        };
+      }
+
+      // Warning if sending to self
+      if (
+        connectedAddress &&
+        recipient.toLowerCase() === connectedAddress.toLowerCase()
+      ) {
+        return {
+          isValid: true,
+          warning: "You are withdrawing to your own wallet",
+        };
+      }
+
+      return { isValid: true };
+    };
+  }, [connectedAddress]);
+
+  return { validate };
+}
+
+/**
+ * Format amount input to valid decimal string
+ */
+export function formatERC20AmountInput(
+  value: string,
+  decimals: number
+): string {
+  // Remove any non-numeric characters except decimal point
+  let formatted = value.replace(/[^\d.]/g, "");
+
+  // Prevent multiple decimal points
+  const parts = formatted.split(".");
+  if (parts.length > 2) {
+    formatted = parts[0] + "." + parts.slice(1).join("");
+  }
+
+  // Limit decimal places
+  if (parts.length === 2 && parts[1].length > decimals) {
+    formatted = parts[0] + "." + parts[1].slice(0, decimals);
+  }
+
+  return formatted;
+}
+
+/**
+ * Calculate maximum ERC20 amount considering gas reserves
+ */
+export function calculateMaxERC20Amount(
+  balance: bigint,
+  decimals: number,
+  reserveGas: boolean = false
+): string {
+  if (balance === BigInt(0)) return "0";
+
+  // For ERC20 tokens, we don't need to reserve gas from the token balance
+  // Gas is paid in the native currency (HBAR/ETH)
+  // So we can return the full balance
+  return formatUnits(balance, decimals);
+}
+
+/**
+ * Get user's HBAR balance for gas fee checks
+ */
+export function useHBARGasBalance() {
+  const { address } = useAccount();
+  const { data: balance } = useBalance({
+    address,
+  });
+
+  const hasEnoughForGas = balance && balance.value > parseUnits("0.1", 18);
+
+  return {
+    balance: balance?.value || BigInt(0),
+    formatted: balance?.formatted || "0",
+    hasEnoughForGas,
+  };
+}
+
+/**
+ * Combined validation for ERC20 operations
+ */
+export function useERC20OperationValidation(
+  operation: "deposit" | "withdraw",
+  tokenDecimals: number = 18,
+  balance?: bigint
+) {
+  const depositValidation = useERC20DepositValidation(tokenDecimals, balance);
+  const withdrawValidation = useERC20WithdrawValidation(tokenDecimals, balance);
+  const recipientValidation = useERC20RecipientValidation();
+  const gasBalance = useHBARGasBalance();
+
+  const validateAmount = useMemo(() => {
+    return operation === "deposit"
+      ? depositValidation.validate
+      : withdrawValidation.validate;
+  }, [operation, depositValidation, withdrawValidation]);
+
+  const validateRecipient = recipientValidation.validate;
+
+  // Check gas balance
+  const checkGasBalance = useMemo(() => {
+    return (): ValidationResult => {
+      if (!gasBalance.hasEnoughForGas) {
+        return {
+          isValid: false,
+          error:
+            "Insufficient HBAR for gas fees. You need at least 0.1 HBAR for transaction fees.",
+        };
+      }
+      return { isValid: true };
+    };
+  }, [gasBalance]);
+
+  return {
+    validateAmount,
+    validateRecipient,
+    checkGasBalance,
+    gasBalance,
+  };
+}
 /**
  * Validate recipient address
  */

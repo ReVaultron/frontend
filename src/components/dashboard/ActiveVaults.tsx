@@ -21,7 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useMemo, useState } from "react";
 import { ParsedPythPrice } from "@/lib/pyth/hermes-client";
 import { formatUnits } from "viem";
-import { HBAR_DECIMALS, USER_THERSHOLD } from "@/lib/constants";
+import { ETH_DECIMALS, USER_THRESHOLD } from "@/lib/constants";
 
 interface ActiveVaultsProps {
   hbarPrice?: ParsedPythPrice | null;
@@ -31,26 +31,27 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
   const { address: userAddress, isConnected } = useAccount();
   const { vaultAddress, hasVault } = useUserVaultAddress(userAddress);
   const vaultData = useUserVaultData(hasVault ? vaultAddress : undefined);
-  const { currentVolatility, lastUpdate, refetchVolatility } = useVolatilityIndexData(
-    DEFAULT_PRICE_FEED_ID
-  );
+  const { currentVolatility, lastUpdate, refetchVolatility } =
+    useVolatilityIndexData(DEFAULT_PRICE_FEED_ID);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // User threshold (would come from user settings in production)
-  const isAboveThreshold = currentVolatility > USER_THERSHOLD;
+  const isAboveThreshold = currentVolatility > USER_THRESHOLD;
 
-    // Calculate USD value
+  // Calculate USD value
   const vaultValueUSD = useMemo(() => {
     if (!hbarPrice || !vaultData.hbarBalanceRaw) return "0.00";
-    
-    const hbarAmount = parseFloat(formatUnits(vaultData.hbarBalanceRaw, HBAR_DECIMALS));
+
+    const hbarAmount = parseFloat(
+      formatUnits(vaultData.hbarBalanceRaw, ETH_DECIMALS)
+    );
     return (hbarAmount * hbarPrice.priceUSD).toFixed(2);
   }, [hbarPrice, vaultData.hbarBalanceRaw]);
 
   // Calculate risk level
   const riskLevel = (() => {
-    const ratio = currentVolatility / USER_THERSHOLD;
+    const ratio = currentVolatility / USER_THRESHOLD;
     if (ratio < 0.5)
       return {
         level: "Low",
@@ -131,7 +132,9 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
             <Activity className="w-5 h-5 text-purple-600 dark:text-purple-300" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Active Vault</h3>
+            <h3 className="text-lg font-semibold text-foreground">
+              Active Vault
+            </h3>
             <p className="text-xs text-muted-foreground">
               Last updated {lastUpdateText}
             </p>
@@ -143,7 +146,9 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
           onClick={handleRefresh}
           disabled={isRefreshing}
         >
-          <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
+          />
         </Button>
       </div>
 
@@ -160,8 +165,8 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
                 Your Vault
               </h4>
               <p className="text-sm text-muted-foreground">
-                {vaultData.tokenCount} token{vaultData.tokenCount !== 1 ? "s" : ""}{" "}
-                supported
+                {vaultData.tokenCount} token
+                {vaultData.tokenCount !== 1 ? "s" : ""} supported
               </p>
             </div>
           </div>
@@ -206,28 +211,30 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
               </p>
             </div>
             <div className="space-y-2">
-              {vaultData.tokens.slice(0, 3).map((token: string, index: number) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full" />
-                    <a
-                      href={`https://hashscan.io/testnet/token/${token}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-xs hover:text-primary transition-colors flex items-center gap-1"
-                    >
-                      {token.slice(0, 10)}...{token.slice(-8)}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+              {vaultData.tokens
+                .slice(0, 3)
+                .map((token: string, index: number) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full" />
+                      <a
+                        href={`https://hashscan.io/testnet/token/${token}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-xs hover:text-primary transition-colors flex items-center gap-1"
+                      >
+                        {token.slice(0, 10)}...{token.slice(-8)}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                    <span className="text-xs text-green-600 font-medium">
+                      ✓ Associated
+                    </span>
                   </div>
-                  <span className="text-xs text-green-600 font-medium">
-                    ✓ Associated
-                  </span>
-                </div>
-              ))}
+                ))}
               {vaultData.tokens.length > 3 && (
                 <p className="text-xs text-muted-foreground text-center pt-2">
                   +{vaultData.tokens.length - 3} more token
@@ -254,7 +261,8 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
               <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
               <p className="text-sm text-yellow-800 dark:text-yellow-200">
                 <strong>High Volatility:</strong> Current volatility (
-                {currentVolatility.toFixed(2)}%) exceeds threshold ({USER_THERSHOLD}
+                {currentVolatility.toFixed(2)}%) exceeds threshold (
+                {USER_THRESHOLD}
                 %). Monitor closely.
               </p>
             </div>
@@ -274,7 +282,7 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
         <div className="mb-4 p-3 bg-muted/50 rounded-lg">
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="text-muted-foreground">Volatility Threshold</span>
-            <span className="font-semibold">{USER_THERSHOLD.toFixed(2)}%</span>
+            <span className="font-semibold">{USER_THRESHOLD.toFixed(2)}%</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Current Volatility</span>
@@ -302,7 +310,9 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
               className="font-mono text-xs hover:text-primary transition-colors flex items-center gap-1"
             >
               {vaultData.owner && typeof vaultData.owner === "string"
-                ? `${vaultData.owner.slice(0, 6)}...${vaultData.owner.slice(-4)}`
+                ? `${vaultData.owner.slice(0, 6)}...${vaultData.owner.slice(
+                    -4
+                  )}`
                 : "Loading..."}
               <ExternalLink className="w-3 h-3" />
             </a>
@@ -316,7 +326,9 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
               className="font-mono text-xs hover:text-primary transition-colors flex items-center gap-1"
             >
               {vaultData.address
-                ? `${vaultData.address.slice(0, 6)}...${vaultData.address.slice(-4)}`
+                ? `${vaultData.address.slice(0, 6)}...${vaultData.address.slice(
+                    -4
+                  )}`
                 : "N/A"}
               <ExternalLink className="w-3 h-3" />
             </a>
