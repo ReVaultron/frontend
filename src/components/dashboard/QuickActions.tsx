@@ -30,7 +30,7 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
   const [depositTokenOpen, setDepositTokenOpen] = useState(false);
   const [withdrawTokenOpen, setWithdrawTokenOpen] = useState(false);
   const [associateTokenOpen, setAssociateTokenOpen] = useState(false);
-  const [depositERC20Open, setDepositERC20Open] = useState(false);
+  // const [depositERC20Open, setDepositERC20Open] = useState(false);
   const [withdrawERC20Open, setWithdrawERC20Open] = useState(false);
 
   // Example token - would be selected by user
@@ -77,7 +77,7 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
           {/* Deposit HBAR */}
           <Button
             variant="outline"
-            className="flex flex-col items-center justify-center h-24 hover:border-primary hover:bg-primary/5 transition-all"
+            className="flex flex-col items-center justify-center h-24 hover:border-primary transition-all"
             onClick={() => setDepositHBAROpen(true)}
           >
             <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mb-2">
@@ -89,7 +89,7 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
           {/* Withdraw HBAR */}
           <Button
             variant="outline"
-            className="flex flex-col items-center justify-center h-24 hover:border-primary hover:bg-primary/5 transition-all"
+            className="flex flex-col items-center justify-center h-24 hover:border-primary transition-all"
             onClick={() => setWithdrawHBAROpen(true)}
           >
             <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mb-2">
@@ -101,7 +101,7 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
           {/* Deposit Token */}
           <Button
             variant="outline"
-            className="flex flex-col items-center justify-center h-24 hover:border-primary hover:bg-primary/5 transition-all"
+            className="flex flex-col items-center justify-center h-24 hover:border-primary transition-all"
             onClick={() => setDepositTokenOpen(true)}
           >
             <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mb-2">
@@ -113,7 +113,7 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
           {/* Withdraw Token */}
           <Button
             variant="outline"
-            className="flex flex-col items-center justify-center h-24 hover:border-primary hover:bg-primary/5 transition-all"
+            className="flex flex-col items-center justify-center h-24 hover:border-primary transition-all"
             onClick={() => setWithdrawTokenOpen(true)}
           >
             <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center mb-2">
@@ -123,21 +123,21 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
           </Button>
 
           {/* Deposit ERC20 */}
-          <Button
+          {/* <Button
             variant="outline"
-            className="flex flex-col items-center justify-center h-24 hover:border-primary hover:bg-primary/5 transition-all"
+            className="flex flex-col items-center justify-center h-24 hover:border-primary transition-all"
             onClick={() => setDepositERC20Open(true)}
           >
             <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center mb-2">
               <ArrowDownToLine className="w-5 h-5 text-teal-600 dark:text-teal-300" />
             </div>
             <span className="text-sm font-medium">Deposit USDC</span>
-          </Button>
+          </Button> */}
 
           {/* Withdraw ERC20 */}
           <Button
             variant="outline"
-            className="flex flex-col items-center justify-center h-24 hover:border-primary hover:bg-primary/5 transition-all"
+            className="flex flex-col items-center justify-center h-24 hover:border-primary/50 transition-all"
             onClick={() => setWithdrawERC20Open(true)}
           >
             <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center mb-2">
@@ -149,7 +149,7 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
           {/* Associate Token */}
           <Button
             variant="outline"
-            className="flex flex-col items-center justify-center h-24 hover:border-primary hover:bg-primary/5 transition-all"
+            className="flex flex-col items-center justify-center h-24 hover:border-primary transition-all"
             onClick={() => setAssociateTokenOpen(true)}
           >
             <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-900 flex items-center justify-center mb-2">
@@ -199,12 +199,12 @@ export function QuickActions({ vaultAddress, hasVault }: QuickActionsProps) {
             tokenSymbol={exampleToken.symbol}
           />
 
-          <ERC20DepositModal
+          {/* <ERC20DepositModal
             open={depositERC20Open}
             onOpenChange={setDepositERC20Open}
             vaultAddress={vaultAddress}
             tokenAddress={tokenAddress}
-          />
+          /> */}
 
           <ERC20WithdrawModal
             open={withdrawERC20Open}
