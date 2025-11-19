@@ -11,9 +11,7 @@ import { useUserVaultData } from "@/hooks/useContracts";
 import { useHBARDepositValidation, formatAmountInput, calculateMaxWithGas } from "@/hooks/useBalanceValidation";
 import { formatUnits } from "viem";
 import type { Address } from "viem";
-
-const ETH_DECIMALS = 18;
-const HBAR_DECIMALS = 8;
+import { HBAR_DECIMALS } from "@/lib/constants";
 
 interface HBARDepositModalProps {
   open: boolean;
@@ -26,7 +24,7 @@ export function HBARDepositModal({ open, onOpenChange, vaultAddress }: HBARDepos
   const [showValidation, setShowValidation] = useState(false);
 
   const { hbarBalanceRaw, refetchHbarBalance } = useUserVaultData(vaultAddress);
-  const { validate, walletBalance } = useHBARDepositValidation(vaultAddress);
+  const { validate, walletBalance } = useHBARDepositValidation();
   const { 
     depositHBAR, 
     isPending, 
@@ -44,12 +42,12 @@ export function HBARDepositModal({ open, onOpenChange, vaultAddress }: HBARDepos
 
   // Format wallet balance
   const walletHBAR = walletBalance 
-    ? formatUnits(walletBalance.value, ETH_DECIMALS)
+    ? formatUnits(walletBalance.value, HBAR_DECIMALS)
     : "0";
 
   // Calculate max deposit (wallet balance - gas reserve)
   const maxDeposit = walletBalance
-    ? calculateMaxWithGas(walletBalance.value, ETH_DECIMALS)
+    ? calculateMaxWithGas(walletBalance.value, HBAR_DECIMALS)
     : "0";
 
   // Refetch balance after successful deposit
@@ -80,7 +78,7 @@ export function HBARDepositModal({ open, onOpenChange, vaultAddress }: HBARDepos
   }, [open]);
 
   const handleAmountChange = (value: string) => {
-    const formatted = formatAmountInput(value, ETH_DECIMALS);
+    const formatted = formatAmountInput(value, HBAR_DECIMALS);
     setAmount(formatted);
     setShowValidation(true);
   };

@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useMemo, useState } from "react";
 import { ParsedPythPrice } from "@/lib/pyth/hermes-client";
 import { formatUnits } from "viem";
+import { HBAR_DECIMALS, USER_THERSHOLD } from "@/lib/constants";
 
 interface ActiveVaultsProps {
   hbarPrice?: ParsedPythPrice | null;
@@ -37,20 +38,19 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // User threshold (would come from user settings in production)
-  const userThreshold = 30.0;
-  const isAboveThreshold = currentVolatility > userThreshold;
+  const isAboveThreshold = currentVolatility > USER_THERSHOLD;
 
     // Calculate USD value
   const vaultValueUSD = useMemo(() => {
     if (!hbarPrice || !vaultData.hbarBalanceRaw) return "0.00";
     
-    const hbarAmount = parseFloat(formatUnits(vaultData.hbarBalanceRaw, 8));
+    const hbarAmount = parseFloat(formatUnits(vaultData.hbarBalanceRaw, HBAR_DECIMALS));
     return (hbarAmount * hbarPrice.priceUSD).toFixed(2);
   }, [hbarPrice, vaultData.hbarBalanceRaw]);
 
   // Calculate risk level
   const riskLevel = (() => {
-    const ratio = currentVolatility / userThreshold;
+    const ratio = currentVolatility / USER_THERSHOLD;
     if (ratio < 0.5)
       return {
         level: "Low",
@@ -254,7 +254,7 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
               <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
               <p className="text-sm text-yellow-800 dark:text-yellow-200">
                 <strong>High Volatility:</strong> Current volatility (
-                {currentVolatility.toFixed(1)}%) exceeds threshold ({userThreshold}
+                {currentVolatility.toFixed(2)}%) exceeds threshold ({USER_THERSHOLD}
                 %). Monitor closely.
               </p>
             </div>
@@ -274,7 +274,7 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
         <div className="mb-4 p-3 bg-muted/50 rounded-lg">
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="text-muted-foreground">Volatility Threshold</span>
-            <span className="font-semibold">{userThreshold.toFixed(1)}%</span>
+            <span className="font-semibold">{USER_THERSHOLD.toFixed(2)}%</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Current Volatility</span>

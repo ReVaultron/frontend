@@ -1,12 +1,237 @@
 // lib/contracts/abis.ts
 
+// MockUSDC Contract ABI (Complete)
+export const MOCK_USDC_ABI = [
+  {
+    type: "constructor",
+    stateMutability: "undefined",
+    payable: false,
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "ERC20InsufficientAllowance",
+    inputs: [
+      { type: "address", name: "spender" },
+      { type: "uint256", name: "allowance" },
+      { type: "uint256", name: "needed" },
+    ],
+  },
+  {
+    type: "error",
+    name: "ERC20InsufficientBalance",
+    inputs: [
+      { type: "address", name: "sender" },
+      { type: "uint256", name: "balance" },
+      { type: "uint256", name: "needed" },
+    ],
+  },
+  {
+    type: "error",
+    name: "ERC20InvalidApprover",
+    inputs: [{ type: "address", name: "approver" }],
+  },
+  {
+    type: "error",
+    name: "ERC20InvalidReceiver",
+    inputs: [{ type: "address", name: "receiver" }],
+  },
+  {
+    type: "error",
+    name: "ERC20InvalidSender",
+    inputs: [{ type: "address", name: "sender" }],
+  },
+  {
+    type: "error",
+    name: "ERC20InvalidSpender",
+    inputs: [{ type: "address", name: "spender" }],
+  },
+  {
+    type: "error",
+    name: "OwnableInvalidOwner",
+    inputs: [{ type: "address", name: "owner" }],
+  },
+  {
+    type: "error",
+    name: "OwnableUnauthorizedAccount",
+    inputs: [{ type: "address", name: "account" }],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "Approval",
+    inputs: [
+      { type: "address", name: "owner", indexed: true },
+      { type: "address", name: "spender", indexed: true },
+      { type: "uint256", name: "value", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "OwnershipTransferred",
+    inputs: [
+      { type: "address", name: "previousOwner", indexed: true },
+      { type: "address", name: "newOwner", indexed: true },
+    ],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "Transfer",
+    inputs: [
+      { type: "address", name: "from", indexed: true },
+      { type: "address", name: "to", indexed: true },
+      { type: "uint256", name: "value", indexed: false },
+    ],
+  },
+  {
+    type: "function",
+    name: "allowance",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [
+      { type: "address", name: "owner" },
+      { type: "address", name: "spender" },
+    ],
+    outputs: [{ type: "uint256", name: "" }],
+  },
+  {
+    type: "function",
+    name: "approve",
+    constant: false,
+    payable: false,
+    inputs: [
+      { type: "address", name: "spender" },
+      { type: "uint256", name: "value" },
+    ],
+    outputs: [{ type: "bool", name: "" }],
+  },
+  {
+    type: "function",
+    name: "balanceOf",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [{ type: "address", name: "account" }],
+    outputs: [{ type: "uint256", name: "" }],
+  },
+  {
+    type: "function",
+    name: "burn",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "uint256", name: "amount" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "decimals",
+    constant: true,
+    stateMutability: "pure",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "uint8", name: "" }],
+  },
+  {
+    type: "function",
+    name: "mint",
+    constant: false,
+    payable: false,
+    inputs: [
+      { type: "address", name: "to" },
+      { type: "uint256", name: "amount" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "name",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "string", name: "" }],
+  },
+  {
+    type: "function",
+    name: "owner",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "address", name: "" }],
+  },
+  {
+    type: "function",
+    name: "renounceOwnership",
+    constant: false,
+    payable: false,
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "symbol",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "string", name: "" }],
+  },
+  {
+    type: "function",
+    name: "totalSupply",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "uint256", name: "" }],
+  },
+  {
+    type: "function",
+    name: "transfer",
+    constant: false,
+    payable: false,
+    inputs: [
+      { type: "address", name: "to" },
+      { type: "uint256", name: "value" },
+    ],
+    outputs: [{ type: "bool", name: "" }],
+  },
+  {
+    type: "function",
+    name: "transferFrom",
+    constant: false,
+    payable: false,
+    inputs: [
+      { type: "address", name: "from" },
+      { type: "address", name: "to" },
+      { type: "uint256", name: "value" },
+    ],
+    outputs: [{ type: "bool", name: "" }],
+  },
+  {
+    type: "function",
+    name: "transferOwnership",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "address", name: "newOwner" }],
+    outputs: [],
+  },
+] as const;
+
 // FactoryVault Contract ABI (Complete)
 export const FACTORY_VAULT_ABI = [
   {
     type: "constructor",
     stateMutability: "undefined",
     payable: false,
-    inputs: [{ type: "uint256", name: "_creationFee" }],
+    inputs: [
+      { type: "uint256", name: "_creationFee" },
+      { type: "address", name: "usdc" },
+    ],
   },
   {
     type: "error",
@@ -209,6 +434,15 @@ export const FACTORY_VAULT_ABI = [
     payable: false,
     inputs: [{ type: "address", name: "newOwner" }],
     outputs: [],
+  },
+  {
+    type: "function",
+    name: "usdcTokenAddress",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "address", name: "" }],
   },
   {
     type: "function",
@@ -638,6 +872,38 @@ export const USER_VAULT_ABI = [
     ],
     outputs: [],
   },
+  {
+    type: "function",
+    name: "getERC20Balance",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [{ type: "address", name: "token" }],
+    outputs: [{ type: "uint256", name: "balance" }],
+  },
+  {
+    type: "function",
+    name: "depositToken",
+    constant: false,
+    payable: true,
+    inputs: [
+      { type: "address", name: "token" },
+      { type: "uint256", name: "amount" }
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdrawToken",
+    constant: false,
+    payable: false,
+    inputs: [
+      { type: "address", name: "token" },
+      { type: "uint256", name: "amount" },
+      { type: "address", name: "to" }
+    ],
+    outputs: [],
+  },
   { type: "receive", stateMutability: "payable" },
 ] as const;
 
@@ -1018,6 +1284,425 @@ export const VOLATILITY_INDEX_ABI = [
   { type: "receive", stateMutability: "payable" },
 ] as const;
 
+// ManualSwapper Contract ABI (Complete)
+export const MANUAL_SWAPPER_ABI = [
+  {
+    type: "constructor",
+    stateMutability: "undefined",
+    payable: false,
+    inputs: [
+      { type: "address", name: "_usdc" },
+      { type: "uint256", name: "_price" },
+    ],
+  },
+  {
+    type: "error",
+    name: "OwnableInvalidOwner",
+    inputs: [{ type: "address", name: "owner" }],
+  },
+  {
+    type: "error",
+    name: "OwnableUnauthorizedAccount",
+    inputs: [{ type: "address", name: "account" }],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "OwnershipTransferred",
+    inputs: [
+      { type: "address", name: "previousOwner", indexed: true },
+      { type: "address", name: "newOwner", indexed: true },
+    ],
+  },
+  {
+    type: "function",
+    name: "depositUSDC",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "uint256", name: "amount" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "getAmountOut",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [{ type: "uint256", name: "hbarAmount" }],
+    outputs: [{ type: "uint256", name: "" }],
+  },
+  {
+    type: "function",
+    name: "getUSDCBalance",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "uint256", name: "" }],
+  },
+  {
+    type: "function",
+    name: "owner",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "address", name: "" }],
+  },
+  {
+    type: "function",
+    name: "pricePerHBAR",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "uint256", name: "" }],
+  },
+  {
+    type: "function",
+    name: "renounceOwnership",
+    constant: false,
+    payable: false,
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "setPrice",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "uint256", name: "newPrice" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "swap",
+    constant: false,
+    stateMutability: "payable",
+    payable: true,
+    inputs: [{ type: "address", name: "receiver" }],
+    outputs: [{ type: "uint256", name: "amountOut" }],
+  },
+  {
+    type: "function",
+    name: "transferOwnership",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "address", name: "newOwner" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "usdc",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "address", name: "" }],
+  },
+  {
+    type: "function",
+    name: "withdrawHBAR",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "uint256", name: "amount" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdrawUSDC",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "uint256", name: "amount" }],
+    outputs: [],
+  },
+  { type: "receive", stateMutability: "payable" },
+] as const;
+
+// RebalancerExecutor Contract ABI (Complete)
+export const REBALANCER_EXECUTOR_ABI = [
+  {
+    type: "constructor",
+    stateMutability: "undefined",
+    payable: false,
+    inputs: [
+      { type: "address", name: "_volatilityIndex" },
+      { type: "address", name: "_swapper" },
+    ],
+  },
+  { type: "error", name: "InsufficientBalance", inputs: [] },
+  { type: "error", name: "InvalidAddress", inputs: [] },
+  { type: "error", name: "InvalidConfiguration", inputs: [] },
+  {
+    type: "error",
+    name: "OwnableInvalidOwner",
+    inputs: [{ type: "address", name: "owner" }],
+  },
+  {
+    type: "error",
+    name: "OwnableUnauthorizedAccount",
+    inputs: [{ type: "address", name: "account" }],
+  },
+  { type: "error", name: "RebalanceNotNeeded", inputs: [] },
+  { type: "error", name: "ReentrancyGuardReentrantCall", inputs: [] },
+  { type: "error", name: "Unauthorized", inputs: [] },
+  {
+    type: "event",
+    anonymous: false,
+    name: "AgentAuthorized",
+    inputs: [
+      { type: "address", name: "agent", indexed: true },
+      { type: "uint256", name: "timestamp", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "AgentRevoked",
+    inputs: [
+      { type: "address", name: "agent", indexed: true },
+      { type: "uint256", name: "timestamp", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "MaxDriftUpdated",
+    inputs: [
+      { type: "uint256", name: "oldDrift", indexed: false },
+      { type: "uint256", name: "newDrift", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "OwnershipTransferred",
+    inputs: [
+      { type: "address", name: "previousOwner", indexed: true },
+      { type: "address", name: "newOwner", indexed: true },
+    ],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "RebalanceExecuted",
+    inputs: [
+      { type: "address", name: "vault", indexed: true },
+      { type: "address", name: "tokenSold", indexed: true },
+      { type: "address", name: "tokenBought", indexed: true },
+      { type: "int64", name: "amountSold", indexed: false },
+      { type: "int64", name: "amountBought", indexed: false },
+      { type: "uint256", name: "volatility", indexed: false },
+      { type: "uint256", name: "timestamp", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    anonymous: false,
+    name: "RebalanceFailed",
+    inputs: [
+      { type: "address", name: "vault", indexed: true },
+      { type: "string", name: "reason", indexed: false },
+    ],
+  },
+  {
+    type: "function",
+    name: "BASIS_POINTS",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "uint256", name: "" }],
+  },
+  {
+    type: "function",
+    name: "authorizeAgent",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "address", name: "agent" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "executeRebalance",
+    constant: false,
+    payable: false,
+    inputs: [
+      { type: "address", name: "vault" },
+      { type: "address", name: "tokenToSell" },
+      { type: "address", name: "tokenToBuy" },
+      { type: "uint256", name: "targetAllocationSell" },
+      { type: "uint256", name: "targetAllocationBuy" },
+      { type: "uint256", name: "volatilityThreshold" },
+      { type: "bytes32", name: "priceFeedId" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "getRebalanceCount",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "uint256", name: "" }],
+  },
+  {
+    type: "function",
+    name: "getRebalanceHistory",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [{ type: "address", name: "vault" }],
+    outputs: [
+      {
+        type: "tuple[]",
+        name: "records",
+        components: [
+          { type: "address", name: "vault" },
+          { type: "address", name: "tokenSold" },
+          { type: "address", name: "tokenBought" },
+          { type: "int64", name: "amountSold" },
+          { type: "int64", name: "amountBought" },
+          { type: "uint256", name: "volatility" },
+          { type: "uint256", name: "timestamp" },
+        ],
+      },
+    ],
+  },
+  {
+    type: "function",
+    name: "isAuthorizedAgent",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [{ type: "address", name: "" }],
+    outputs: [{ type: "bool", name: "" }],
+  },
+  {
+    type: "function",
+    name: "maxDriftBps",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "uint256", name: "" }],
+  },
+  {
+    type: "function",
+    name: "needsRebalancing",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [
+      { type: "address", name: "vault" },
+      { type: "address", name: "token0" },
+      { type: "address", name: "token1" },
+      { type: "uint256", name: "targetAllocation0" },
+      { type: "uint256", name: "targetAllocation1" },
+      { type: "uint256", name: "volatilityThreshold" },
+      { type: "bytes32", name: "priceFeedId" },
+    ],
+    outputs: [
+      { type: "bool", name: "needed" },
+      { type: "uint256", name: "currentDrift" },
+    ],
+  },
+  {
+    type: "function",
+    name: "owner",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "address", name: "" }],
+  },
+  {
+    type: "function",
+    name: "rebalanceHistory",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [{ type: "uint256", name: "" }],
+    outputs: [
+      { type: "address", name: "vault" },
+      { type: "address", name: "tokenSold" },
+      { type: "address", name: "tokenBought" },
+      { type: "int64", name: "amountSold" },
+      { type: "int64", name: "amountBought" },
+      { type: "uint256", name: "volatility" },
+      { type: "uint256", name: "timestamp" },
+    ],
+  },
+  {
+    type: "function",
+    name: "renounceOwnership",
+    constant: false,
+    payable: false,
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "revokeAgent",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "address", name: "agent" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "setMaxDrift",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "uint256", name: "newMaxDrift" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "swapper",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "address", name: "" }],
+  },
+  {
+    type: "function",
+    name: "transferOwnership",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "address", name: "newOwner" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "updateSwapper",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "address", name: "newSwapper" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "updateVolatilityIndex",
+    constant: false,
+    payable: false,
+    inputs: [{ type: "address", name: "newVolatilityIndex" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "volatilityIndex",
+    constant: true,
+    stateMutability: "view",
+    payable: false,
+    inputs: [],
+    outputs: [{ type: "address", name: "" }],
+  },
+  { type: "receive", stateMutability: "payable" },
+] as const;
+
 export const PRICE_FEED_IDS = {
   // HBAR/USD - Hedera
   HBAR_USD:
@@ -1039,12 +1724,11 @@ export const PRICE_FEED_IDS = {
 export const DEFAULT_PRICE_FEED_ID = PRICE_FEED_IDS.HBAR_USD;
 // Contract addresses
 export const CONTRACT_ADDRESSES = {
-  FACTORY_VAULT: "0x91a14fb3cc6c86bd3c03fe6c93b9af0953f05efb" as `0x${string}`, // 0.0.7268904
+  MOCK_USDC: "0x3b81ed2601bf31fd4680b1d55f995b137a3f01c3" as `0x${string}`, // 0.0.7284758
+  FACTORY_VAULT: "0x60907fd552fe18c1238f2a2a7b7656aa55b74619" as `0x${string}`, // 0.0.7268965
   VOLATILITY_INDEX:
-    "0x07cdee8e50cb4983f93a2bb3d65cf8303df22951" as `0x${string}`, // 0.0.7268905
-  SAUCER_SWAPPER:
-    "0x8cc8f8706956df0cd2833330277da448602f8487" as `0x${string}`, // 0.0.7268906
+    "0x26fa3e520116dd1e3ff75f24787b7f533188c99c" as `0x${string}`, // 0.0.7284763
+  MANUAL_SWAPPER: "0x422928de57afba854ff25f8fd61905cd12c0b83c" as `0x${string}`, // 0.0.7284759
   REBALANCER_EXECUTOR:
-    "0x76d35728285bf933263b47552e1df88099b27e75" as `0x${string}`, // 0.0.7268907
-  
+    "0x2d402592149c42c13ab0c2b2cbd14fab119e87d9" as `0x${string}`, // 0.0.7284764
 } as const;

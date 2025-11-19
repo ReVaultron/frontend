@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VaultCreationModal } from "@/components/vault/VaultCreationFlow";
 import { DEFAULT_PRICE_FEED_ID } from "@/lib/contracts/abis";
+import { USER_THERSHOLD, HBAR_DECIMALS } from "@/lib/constants";
 
 const Dashboard = () => {
   const { address: userAddress, isConnected } = useAccount();
@@ -57,7 +58,7 @@ const Dashboard = () => {
   const totalDeposited = useMemo(() => {
     if (!hasVault || !vaultData.hbarBalanceRaw || !hbarPrice) return "0.00";
 
-    const hbarAmount = parseFloat(formatUnits(vaultData.hbarBalanceRaw, 8));
+    const hbarAmount = parseFloat(formatUnits(vaultData.hbarBalanceRaw, HBAR_DECIMALS));
     const usdValue = hbarAmount * hbarPrice.priceUSD;
 
     return usdValue.toFixed(2);
@@ -67,7 +68,7 @@ const Dashboard = () => {
   const walletValueUSD = useMemo(() => {
     if (!walletBalance || !hbarPrice) return "0.00";
 
-    const hbarAmount = parseFloat(formatUnits(walletBalance.value, 18));
+    const hbarAmount = parseFloat(formatUnits(walletBalance.value, HBAR_DECIMALS));
     const usdValue = hbarAmount * hbarPrice.priceUSD;
 
     return usdValue.toFixed(2);
@@ -189,7 +190,7 @@ const Dashboard = () => {
                 </p>
                 <p className="text-2xl font-bold">
                   {walletBalance
-                    ? parseFloat(formatUnits(walletBalance.value, 18)).toFixed(
+                    ? parseFloat(formatUnits(walletBalance.value, HBAR_DECIMALS)).toFixed(
                         4
                       )
                     : "0.0000"}{" "}
@@ -293,7 +294,7 @@ const Dashboard = () => {
 
         {/* Volatility Monitor */}
         <VolatilityMonitor
-          threshold={30}
+          threshold={USER_THERSHOLD}
           priceFeedId={DEFAULT_PRICE_FEED_ID}
         />
 

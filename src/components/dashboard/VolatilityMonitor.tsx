@@ -127,7 +127,7 @@ export function VolatilityMonitor({ threshold, priceFeedId = DEFAULT_PRICE_FEED_
         {/* Volatility Progress Bar */}
         <div className="mb-4">
           <div className="flex justify-between text-sm text-muted-foreground mb-2">
-            <span>Your Threshold: {threshold.toFixed(1)}%</span>
+            <span>Your Threshold: {threshold.toFixed(2)}%</span>
             <span>{Math.min(volatilityPercent, 100).toFixed(0)}% of threshold</span>
           </div>
           <div className="relative w-full bg-muted rounded-full h-4 overflow-hidden">

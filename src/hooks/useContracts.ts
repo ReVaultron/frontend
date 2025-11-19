@@ -1,15 +1,18 @@
 // hooks/useContracts.ts
-import { useReadContract, useWriteContract, useWatchContractEvent } from "wagmi";
-import { 
-  USER_VAULT_ABI, 
-  VOLATILITY_INDEX_ABI, 
-  CONTRACT_ADDRESSES, 
+import {
+  useReadContract,
+  useWriteContract,
+  useWatchContractEvent,
+} from "wagmi";
+import {
+  USER_VAULT_ABI,
+  VOLATILITY_INDEX_ABI,
+  CONTRACT_ADDRESSES,
   DEFAULT_PRICE_FEED_ID,
-  FACTORY_VAULT_ABI
+  FACTORY_VAULT_ABI,
 } from "@/lib/contracts/abis";
 import { useState } from "react";
 import type { Address } from "viem";
-
 
 // ==================== TYPE DEFINITIONS ====================
 
@@ -70,19 +73,33 @@ export function useFactoryVaultData() {
     functionName: "getBalance",
   });
 
+  const { data: usdcTokenAddress } = useReadContract({
+    address,
+    abi: FACTORY_VAULT_ABI,
+    functionName: "usdcTokenAddress",
+  });
+  console.log("usdcTokenAddress", usdcTokenAddress);
+
   return {
     creationFee: creationFee ? Number(creationFee) / 1e18 : 0,
     creationFeeRaw: creationFee || BigInt(0),
     vaultCount: vaultCount ? Number(vaultCount) : 0,
     balance: balance ? Number(balance) / 1e18 : 0,
     balanceRaw: balance || BigInt(0),
+    usdcTokenAddress: usdcTokenAddress as Address | undefined,
     refetchFee,
     refetchCount,
   };
 }
 
 export function useFactoryVaultWrite() {
-  const { writeContract, isPending, isSuccess, error, data: hash } = useWriteContract();
+  const {
+    writeContract,
+    isPending,
+    isSuccess,
+    error,
+    data: hash,
+  } = useWriteContract();
 
   const createVault = async (value: bigint) => {
     return writeContract({
@@ -157,21 +174,36 @@ export function useUserVaultData(vaultAddress?: Address) {
     functionName: "getHBARBalance",
     query: { enabled: !!vaultAddress },
   });
-  console.log('hbarBalance', hbarBalance)
+
+  // Read ERC20 balance
+  const { data: getERC20Balance } = useReadContract({
+    address: vaultAddress,
+    abi: USER_VAULT_ABI,
+    functionName: "getERC20Balance",
+    query: { enabled: !!vaultAddress },
+  });
+  console.log("getERC20Balance", getERC20Balance);
 
   return {
     owner: owner as Address | undefined,
     tokens: (tokens as Address[]) || [],
     tokenCount: tokenCount ? Number(tokenCount) : 0,
-    hbarBalance: hbarBalance ? (Number(hbarBalance) / 1e8).toFixed(4) : "0",
+    hbarBalance: hbarBalance ? (Number(hbarBalance) / 1e18).toFixed(4) : "0",
     hbarBalanceRaw: hbarBalance || BigInt(0),
+    erc20Balance: getERC20Balance
+      ? (Number(getERC20Balance) / 1e18).toFixed(4)
+      : "0",
+    erc20BalanceRaw: getERC20Balance || BigInt(0),
     address: vaultAddress,
     refetchTokens,
     refetchHbarBalance,
   };
 }
 
-export function useTokenBalance(vaultAddress?: Address, tokenAddress?: Address) {
+export function useTokenBalance(
+  vaultAddress?: Address,
+  tokenAddress?: Address
+) {
   // Get tracked balance (internal accounting)
   const { data: trackedBalance, refetch: refetchTracked } = useReadContract({
     address: vaultAddress,
@@ -221,7 +253,13 @@ export function useTokenBalance(vaultAddress?: Address, tokenAddress?: Address) 
 }
 
 export function useUserVaultWrite(vaultAddress?: Address) {
-  const { writeContract, isPending, isSuccess, error, data: hash } = useWriteContract();
+  const {
+    writeContract,
+    isPending,
+    isSuccess,
+    error,
+    data: hash,
+  } = useWriteContract();
 
   /**
    * Deposit tokens into the vault
@@ -230,14 +268,30 @@ export function useUserVaultWrite(vaultAddress?: Address) {
    */
   const deposit = async (token: Address, amount: bigint) => {
     if (!vaultAddress) throw new Error("Vault address not provided");
-    
+
     const int64Amount = toInt64(amount);
-    
+
     return writeContract({
       address: vaultAddress,
       abi: USER_VAULT_ABI,
       functionName: "deposit",
       args: [token, int64Amount],
+    });
+  };
+
+  /**
+   * Deposit ERC20 into the vault
+   * @param token Token address
+   * @param amount Amount in token's smallest unit (as bigint)
+   */
+  const depositERC20 = async (token: Address, amount: bigint) => {
+    if (!vaultAddress) throw new Error("Vault address not provided");
+
+    return writeContract({
+      address: vaultAddress,
+      abi: USER_VAULT_ABI,
+      functionName: "depositToken",
+      args: [token, amount],
     });
   };
 
@@ -249,9 +303,9 @@ export function useUserVaultWrite(vaultAddress?: Address) {
    */
   const withdrawTo = async (token: Address, amount: bigint, to: Address) => {
     if (!vaultAddress) throw new Error("Vault address not provided");
-    
+
     const int64Amount = toInt64(amount);
-    
+
     return writeContract({
       address: vaultAddress,
       abi: USER_VAULT_ABI,
@@ -261,11 +315,32 @@ export function useUserVaultWrite(vaultAddress?: Address) {
   };
 
   /**
+   * Withdraw ERC20 from the vault
+   * @param token Token address
+   * @param amount Amount in token's smallest unit (as bigint)
+   * @param to Recipient address
+   */
+  const withdrawERC20To = async (
+    token: Address,
+    amount: bigint,
+    to: Address
+  ) => {
+    if (!vaultAddress) throw new Error("Vault address not provided");
+
+    return writeContract({
+      address: vaultAddress,
+      abi: USER_VAULT_ABI,
+      functionName: "withdrawToken",
+      args: [token, amount, to],
+    });
+  };
+
+  /**
    * Associate a single token with the vault
    */
   const associateToken = async (token: Address) => {
     if (!vaultAddress) throw new Error("Vault address not provided");
-    
+
     return writeContract({
       address: vaultAddress,
       abi: USER_VAULT_ABI,
@@ -279,7 +354,7 @@ export function useUserVaultWrite(vaultAddress?: Address) {
    */
   const associateTokens = async (tokens: Address[]) => {
     if (!vaultAddress) throw new Error("Vault address not provided");
-    
+
     return writeContract({
       address: vaultAddress,
       abi: USER_VAULT_ABI,
@@ -293,7 +368,7 @@ export function useUserVaultWrite(vaultAddress?: Address) {
    */
   const syncTokenBalance = async (token: Address) => {
     if (!vaultAddress) throw new Error("Vault address not provided");
-    
+
     return writeContract({
       address: vaultAddress,
       abi: USER_VAULT_ABI,
@@ -307,7 +382,7 @@ export function useUserVaultWrite(vaultAddress?: Address) {
    */
   const syncAllTokens = async () => {
     if (!vaultAddress) throw new Error("Vault address not provided");
-    
+
     return writeContract({
       address: vaultAddress,
       abi: USER_VAULT_ABI,
@@ -320,7 +395,7 @@ export function useUserVaultWrite(vaultAddress?: Address) {
    */
   const withdrawHBAR = async (amount: bigint, to: Address) => {
     if (!vaultAddress) throw new Error("Vault address not provided");
-    
+
     return writeContract({
       address: vaultAddress,
       abi: USER_VAULT_ABI,
@@ -334,7 +409,7 @@ export function useUserVaultWrite(vaultAddress?: Address) {
    */
   const dissociateToken = async (token: Address) => {
     if (!vaultAddress) throw new Error("Vault address not provided");
-    
+
     return writeContract({
       address: vaultAddress,
       abi: USER_VAULT_ABI,
@@ -345,7 +420,9 @@ export function useUserVaultWrite(vaultAddress?: Address) {
 
   return {
     deposit,
+    depositERC20,
     withdrawTo,
+    withdrawERC20To,
     associateToken,
     associateTokens,
     syncTokenBalance,
@@ -419,7 +496,9 @@ export function useUserVaultEvents(vaultAddress?: Address) {
 
 // ==================== VOLATILITY INDEX HOOKS ====================
 
-export function useVolatilityIndexData(priceFeedId: `0x${string}` = DEFAULT_PRICE_FEED_ID) {
+export function useVolatilityIndexData(
+  priceFeedId: `0x${string}` = DEFAULT_PRICE_FEED_ID
+) {
   // Read volatility for the price feed
   const { data: volatilityBps, refetch: refetchVolatility } = useReadContract({
     address: CONTRACT_ADDRESSES.VOLATILITY_INDEX,
@@ -467,13 +546,15 @@ export function useVolatilityIndexData(priceFeedId: `0x${string}` = DEFAULT_PRIC
   });
 
   // Parse volatility data
-  const parsedData: VolatilityData | null = volatilityDataRaw ? {
-    volatilityBps: Number(volatilityDataRaw.volatilityBps),
-    price: Number(volatilityDataRaw.price),
-    confidence: Number(volatilityDataRaw.confidence),
-    expo: Number(volatilityDataRaw.expo),
-    timestamp: Number(volatilityDataRaw.timestamp),
-  } : null;
+  const parsedData: VolatilityData | null = volatilityDataRaw
+    ? {
+        volatilityBps: Number(volatilityDataRaw.volatilityBps),
+        price: Number(volatilityDataRaw.price),
+        confidence: Number(volatilityDataRaw.confidence),
+        expo: Number(volatilityDataRaw.expo),
+        timestamp: Number(volatilityDataRaw.timestamp),
+      }
+    : null;
 
   const currentVolatility = volatilityBps ? Number(volatilityBps) / 100 : 0;
   const updateInterval = maxStaleness ? Number(maxStaleness) : 3600;
@@ -491,7 +572,13 @@ export function useVolatilityIndexData(priceFeedId: `0x${string}` = DEFAULT_PRIC
 }
 
 export function useVolatilityIndexWrite() {
-  const { writeContract, isPending, isSuccess, error, data: hash } = useWriteContract();
+  const {
+    writeContract,
+    isPending,
+    isSuccess,
+    error,
+    data: hash,
+  } = useWriteContract();
 
   const updateVolatility = async (
     priceUpdate: `0x${string}`[],
@@ -565,7 +652,8 @@ export function useVaultWithVolatility(
   const vaultData = useUserVaultData(vaultAddress);
   const volatilityData = useVolatilityIndexData(priceFeedId);
 
-  const isVolatilityAboveThreshold = volatilityData.currentVolatility > userThreshold;
+  const isVolatilityAboveThreshold =
+    volatilityData.currentVolatility > userThreshold;
 
   const riskLevel: RiskLevel = (() => {
     const ratio = volatilityData.currentVolatility / userThreshold;
