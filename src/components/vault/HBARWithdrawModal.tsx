@@ -17,6 +17,7 @@ import {
   CheckCircle,
   AlertCircle,
   AlertTriangle,
+  Info,
 } from "lucide-react";
 import { useHBARWithdraw } from "@/hooks/useHBAROperations";
 import {
@@ -29,6 +30,7 @@ import { formatUnits } from "viem";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { ETH_DECIMALS } from "@/lib/constants";
+import { useToast } from "@/hooks/use-toast";
 
 interface HBARWithdrawModalProps {
   open: boolean;
@@ -42,10 +44,13 @@ export function HBARWithdrawModal({
   vaultAddress,
 }: HBARWithdrawModalProps) {
   const [amount, setAmount] = useState("");
-  const [recipient, setRecipient] = useState<Address>("0x0000000000000000000000000000000000000000");
+  const [recipient, setRecipient] = useState<Address>(
+    "0x0000000000000000000000000000000000000000"
+  );
   const [showValidation, setShowValidation] = useState(false);
+  const { toast } = useToast();
+  const { address: userAddress } = useAccount();
 
-  const { address } = useAccount();
   const { hbarBalanceRaw, refetchHbarBalance } = useUserVaultData(vaultAddress);
   const { validate: validateAmount } = useHBARWithdrawValidation();
   const { validate: validateRecipient } = useRecipientValidation();
@@ -54,50 +59,101 @@ export function HBARWithdrawModal({
 
   // Auto-fill recipient with connected address
   useEffect(() => {
-    if (address) {
-      setRecipient(address);
+    if (userAddress) {
+      setRecipient(userAddress);
     }
-  }, [address]);
+  }, [userAddress]);
 
-  // Validate amount and recipient
-  const amountValidation = useMemo(() => {
-    if (!showValidation || !amount) return { isValid: true };
-    return validateAmount(amount, hbarBalanceRaw);
-  }, [amount, hbarBalanceRaw, showValidation, validateAmount]);
+  // Validate both amount and recipient
+  const validation = useMemo(() => {
+    if (!showValidation) return { isValid: true };
 
-  const recipientValidation = useMemo(() => {
-    if (!showValidation || !recipient) return { isValid: true };
-    return validateRecipient(recipient);
-  }, [recipient, showValidation, validateRecipient]);
+    const amountValidation = amount
+      ? validateAmount(amount, hbarBalanceRaw)
+      : { isValid: true };
+    const recipientValidation = recipient
+      ? validateRecipient(recipient)
+      : { isValid: true };
 
-  const isFormValid = amountValidation.isValid && recipientValidation.isValid;
+    return {
+      isValid: amountValidation.isValid && recipientValidation.isValid,
+      amountError: amountValidation.error,
+      recipientError: recipientValidation.error,
+      warning: amountValidation.warning,
+    };
+  }, [amount, recipient, showValidation, validateAmount, validateRecipient]);
 
-  // Refetch balance after successful withdrawal
+  const currentBalance = formatUnits(hbarBalanceRaw, ETH_DECIMALS);
+
+  // Show success toast and refetch balance
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && hash && amount) {
+      const withdrawnAmount = parseFloat(amount).toFixed(2);
+      toast({
+        title: "Withdrawal Successful! ✅",
+        description: (
+          <div className="space-y-2">
+            <p>
+              Successfully withdrew {withdrawnAmount} HBAR from
+              your vault.
+            </p>
+            <a
+              href={`https://hashscan.io/testnet/transaction/${hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline text-sm block"
+            >
+              View on HashScan ↗
+            </a>
+          </div>
+        ),
+        duration: 5000,
+      });
+
+      // Refetch balance after short delay
       setTimeout(() => {
         refetchHbarBalance();
       }, 2000);
-    }
-  }, [isSuccess, refetchHbarBalance]);
 
-  // Reset and close after success
-  useEffect(() => {
-    if (isSuccess) {
+      // Reset and close modal
       setTimeout(() => {
         setAmount("");
+        setRecipient("0x0000000000000000000000000000000000000000");
         setShowValidation(false);
         onOpenChange(false);
-      }, 3000);
+      }, 1500);
     }
-  }, [isSuccess, onOpenChange]);
+  }, [isSuccess, hash, amount, toast, refetchHbarBalance, onOpenChange]);
+
+  // Show error toast
+  useEffect(() => {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Transaction Failed ❌",
+        description: (
+          <div className="space-y-1">
+            <p className="font-semibold">Withdrawal could not be completed</p>
+            <p className="text-sm opacity-90">
+              {error.message || "An error occurred. Please try again."}
+            </p>
+          </div>
+        ),
+        duration: 7000,
+      });
+    }
+  }, [error, toast]);
 
   // Reset validation when modal opens
   useEffect(() => {
     if (open) {
       setShowValidation(false);
+      // Auto-fill recipient with user's address
+      if (userAddress) {
+        setRecipient(userAddress);
+      }
     }
-  }, [open]);
+  }, [open, userAddress]);
 
   const handleAmountChange = (value: string) => {
     const formatted = formatAmountInput(value, ETH_DECIMALS);
@@ -105,33 +161,27 @@ export function HBARWithdrawModal({
     setShowValidation(true);
   };
 
-  const handleRecipientChange = (value: string) => {
-    setRecipient(value as Address);
-    setShowValidation(true);
-  };
-
   const handleMaxClick = () => {
-    const maxAmount = formatUnits(hbarBalanceRaw, ETH_DECIMALS);
-    setAmount(maxAmount);
+    setAmount(currentBalance);
     setShowValidation(true);
   };
 
   const handleWithdraw = async () => {
     setShowValidation(true);
 
-    if (!isFormValid) {
+    if (!validation.isValid) {
       return;
     }
 
     try {
-      await withdraw(amount, recipient);
+      await withdraw(amount, recipient as Address);
     } catch (err) {
       console.error("Withdrawal failed:", err);
     }
   };
 
-  const currentBalance = formatUnits(hbarBalanceRaw, ETH_DECIMALS);
-  const canWithdraw = isFormValid && !isPending && !isConfirming && !isSuccess;
+  const canWithdraw =
+    validation.isValid && !isPending && !isConfirming && !isSuccess;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -142,51 +192,19 @@ export function HBARWithdrawModal({
 
         <div className="space-y-6">
           {/* Balance Info */}
-          <div className="p-4 bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-lg border">
+          <div className="p-3 bg-muted rounded-lg">
             <p className="text-xs text-muted-foreground mb-1">
-              Available to Withdraw
+              Available Balance
             </p>
-            <p className="text-2xl font-bold">
+            <p className="text-lg font-bold">
               {parseFloat(currentBalance).toFixed(2)} HBAR
             </p>
           </div>
 
-          {/* Recipient Address */}
-          <div className="space-y-2">
-            <Label htmlFor="recipient">Recipient Address</Label>
-            <Input
-              id="recipient"
-              type="text"
-              placeholder="0x..."
-              value={recipient}
-              onChange={(e) => handleRecipientChange(e.target.value)}
-              disabled={isPending || isConfirming}
-              className={
-                showValidation && !recipientValidation.isValid
-                  ? "border-red-500 focus-visible:ring-red-500"
-                  : ""
-              }
-            />
-            {address && recipient === address && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" />
-                Withdrawing to your connected wallet
-              </p>
-            )}
-          </div>
-
-          {/* Recipient Validation */}
-          {showValidation && recipientValidation.error && (
-            <Alert className="border-red-500">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription>{recipientValidation.error}</AlertDescription>
-            </Alert>
-          )}
-
           {/* Amount Input */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <Label htmlFor="amount">Amount (HBAR)</Label>
+              <Label htmlFor="withdraw-amount">Amount (HBAR)</Label>
               <Button
                 variant="link"
                 size="sm"
@@ -199,7 +217,7 @@ export function HBARWithdrawModal({
             </div>
             <div className="relative">
               <Input
-                id="amount"
+                id="withdraw-amount"
                 type="text"
                 inputMode="decimal"
                 placeholder="0.00"
@@ -207,7 +225,7 @@ export function HBARWithdrawModal({
                 onChange={(e) => handleAmountChange(e.target.value)}
                 disabled={isPending || isConfirming}
                 className={
-                  showValidation && !amountValidation.isValid
+                  showValidation && validation.amountError
                     ? "border-red-500 focus-visible:ring-red-500"
                     : ""
                 }
@@ -218,46 +236,71 @@ export function HBARWithdrawModal({
             </div>
           </div>
 
-          {/* Amount Validation */}
-          {showValidation && amountValidation.error && (
+          {/* Recipient Input */}
+          <div className="space-y-2">
+            <Label htmlFor="recipient">Recipient Address</Label>
+            <Input
+              id="recipient"
+              type="text"
+              placeholder="0x..."
+              value={recipient}
+              onChange={(e) => {
+                setRecipient(`0x${e.target.value}`);
+                setShowValidation(true);
+              }}
+              disabled={isPending || isConfirming}
+              className={
+                showValidation && validation.recipientError
+                  ? "border-red-500 focus-visible:ring-red-500"
+                  : ""
+              }
+            />
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
+              <span>Enter the Hedera EVM address to receive HBAR</span>
+            </div>
+          </div>
+
+          {/* Validation Messages */}
+          {showValidation && validation.amountError && (
             <Alert className="border-red-500">
               <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription>{amountValidation.error}</AlertDescription>
+              <AlertDescription>{validation.amountError}</AlertDescription>
             </Alert>
           )}
 
-          {showValidation &&
-            amountValidation.warning &&
-            amountValidation.isValid && (
-              <Alert className="border-yellow-500">
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                <AlertDescription>{amountValidation.warning}</AlertDescription>
-              </Alert>
-            )}
+          {showValidation && validation.recipientError && (
+            <Alert className="border-red-500">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription>{validation.recipientError}</AlertDescription>
+            </Alert>
+          )}
+
+          {showValidation && validation.warning && validation.isValid && (
+            <Alert className="border-yellow-500">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription>{validation.warning}</AlertDescription>
+            </Alert>
+          )}
 
           {/* Transaction Summary */}
-          {amount && parseFloat(amount) > 0 && recipient && isFormValid && (
+          {amount && parseFloat(amount) > 0 && validation.isValid && (
             <div className="p-4 bg-muted/50 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">You will receive</span>
+                <span className="text-muted-foreground">You will withdraw</span>
                 <span className="font-medium">
                   {parseFloat(amount).toFixed(2)} HBAR
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  Remaining vault balance
-                </span>
+                <span className="text-muted-foreground">Remaining balance</span>
                 <span className="font-medium">
-                  {Math.max(
-                    0,
-                    parseFloat(currentBalance) - parseFloat(amount)
-                  ).toFixed(2)}{" "}
+                  {(parseFloat(currentBalance) - parseFloat(amount)).toFixed(2)}{" "}
                   HBAR
                 </span>
               </div>
               <div className="flex justify-between text-sm border-t pt-2 mt-2">
-                <span className="text-muted-foreground">Gas fee</span>
+                <span className="text-muted-foreground">Estimated gas fee</span>
                 <span className="font-medium">~0.05 HBAR</span>
               </div>
             </div>
@@ -277,7 +320,7 @@ export function HBARWithdrawModal({
             <Alert>
               <Loader2 className="h-4 w-4 animate-spin" />
               <AlertDescription>
-                Processing withdrawal...
+                Transaction submitted. Confirming on Hedera network...
                 {hash && (
                   <a
                     href={`https://hashscan.io/testnet/transaction/${hash}`}
@@ -288,37 +331,6 @@ export function HBARWithdrawModal({
                     View on HashScan ↗
                   </a>
                 )}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {isSuccess && (
-            <Alert className="border-green-500 bg-green-50 dark:bg-green-900/20">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription>
-                Withdrawal successful!
-                {hash && (
-                  <a
-                    href={`https://hashscan.io/testnet/transaction/${hash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block mt-2 text-primary hover:underline text-xs"
-                  >
-                    View transaction ↗
-                  </a>
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {error && (
-            <Alert className="border-red-500 bg-red-50 dark:bg-red-900/20">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription>
-                <p className="font-semibold">Transaction Failed</p>
-                <p className="text-xs mt-1">
-                  {error.message || "Withdrawal failed. Please try again."}
-                </p>
               </AlertDescription>
             </Alert>
           )}
@@ -342,11 +354,6 @@ export function HBARWithdrawModal({
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {isPending ? "Confirm..." : "Processing..."}
-                </>
-              ) : isSuccess ? (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Withdrawn!
                 </>
               ) : (
                 <>

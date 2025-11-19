@@ -3,7 +3,7 @@ import { useAccount, useBalance } from "wagmi";
 import { parseUnits, formatUnits, isAddress } from "viem";
 import type { Address } from "viem";
 import { useMemo } from "react";
-import{ ETH_DECIMALS } from "@/lib/constants";
+import{ ETH_DECIMALS, HBAR_DECIMALS } from "@/lib/constants";
 
 // Minimum amounts to prevent dust
 const MIN_HBAR_AMOUNT = "0.00000001"; // 1 tinybar
@@ -47,13 +47,13 @@ export function useHBARDepositValidation() {
 
     // Check maximum (int64)
     try {
-      const amountInTinybars = parseUnits(amount, ETH_DECIMALS);
+      const amountInTinybars = parseUnits(amount, HBAR_DECIMALS);
       if (amountInTinybars > MAX_INT64) {
         return {
           isValid: false,
           error: `Amount exceeds maximum value (${formatUnits(
             MAX_INT64,
-            ETH_DECIMALS
+            HBAR_DECIMALS
           )} HBAR)`,
         };
       }
@@ -128,7 +128,7 @@ export function useHBARWithdrawValidation() {
     }
 
     // Check vault balance
-    const vaultHBAR = parseFloat(formatUnits(vaultBalance, ETH_DECIMALS));
+    const vaultHBAR = parseFloat(formatUnits(vaultBalance, HBAR_DECIMALS));
 
     if (vaultHBAR === 0) {
       return {
@@ -141,14 +141,14 @@ export function useHBARWithdrawValidation() {
       return {
         isValid: false,
         error: `Insufficient vault balance. Available: ${vaultHBAR.toFixed(
-          8
+          2
         )} HBAR`,
       };
     }
 
     // Check int64 max
     try {
-      const amountInTinybars = parseUnits(amount, ETH_DECIMALS);
+      const amountInTinybars = parseUnits(amount, HBAR_DECIMALS);
       if (amountInTinybars > MAX_INT64) {
         return {
           isValid: false,

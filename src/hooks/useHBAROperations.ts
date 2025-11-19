@@ -1,5 +1,5 @@
 // hooks/useHBAROperations.ts
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useAccount,
   useSendTransaction,
@@ -9,28 +9,39 @@ import { useUserVaultWrite, useUserVaultData } from "@/hooks/useContracts";
 import { parseUnits, formatUnits } from "viem";
 import type { Address } from "viem";
 import { ETH_DECIMALS } from "@/lib/constants";
+
 export function useHBARDeposit(vaultAddress?: Address) {
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
+  const [txError, setTxError] = useState<any>(null);
+
   const {
     sendTransaction,
-    data: hash,
+    data: wagmiHash,
     isPending,
-    error,
+    error: wagmiError,
   } = useSendTransaction();
-  const { refetchHbarBalance } = useUserVaultData(vaultAddress);
 
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess } =
+    useWaitForTransactionReceipt({ hash: txHash });
+
+  // sync wagmi hash and error
+  useEffect(() => {
+    if (wagmiHash) setTxHash(wagmiHash);
+    if (wagmiError) setTxError(wagmiError);
+  }, [wagmiHash, wagmiError]);
+
+  // 🧹 Reset function after success or fail
+  const resetTxState = () => {
+    setTxHash(undefined);
+    setTxError(null);
+  };
 
   const depositHBAR = async (amount: string) => {
-    if (!vaultAddress) {
-      throw new Error("Vault address not provided");
-    }
-
-    // Convert HBAR to tinybars (18 decimals)
+    if (!vaultAddress) throw new Error("Vault address not provided");
     const amountInTinybars = parseUnits(amount, ETH_DECIMALS);
 
-    // Send HBAR directly to vault address (uses receive() function)
+    resetTxState(); // reset before new tx
+
     sendTransaction({
       to: vaultAddress,
       value: amountInTinybars,
@@ -42,26 +53,42 @@ export function useHBARDeposit(vaultAddress?: Address) {
     isPending,
     isConfirming,
     isSuccess,
-    error,
-    hash,
-    refetchHbarBalance,
+    hash: txHash,
+    error: txError,
+    resetTxState,
   };
 }
 
+
 export function useHBARWithdraw(vaultAddress?: Address) {
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
+  const [txError, setTxError] = useState<any>(null);
+
   const { address } = useAccount();
-  const { withdrawHBAR, isPending, isSuccess, error, hash } =
+  const { withdrawHBAR, isPending, isSuccess, error: wagmiError, hash: wagmiHash } =
     useUserVaultWrite(vaultAddress);
   const { refetchHbarBalance } = useUserVaultData(vaultAddress);
 
-  const { isLoading: isConfirming } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming } =
+    useWaitForTransactionReceipt({ hash: txHash });
 
+  // sync wagmi hash and error
+  useEffect(() => {
+    if (wagmiHash) setTxHash(wagmiHash);
+    if (wagmiError) setTxError(wagmiError);
+  }, [wagmiHash, wagmiError]);
+
+  // 🧹 Reset function after success or fail
+  const resetTxState = () => {
+    setTxHash(undefined);
+    setTxError(null);
+  };
   const withdraw = async (amount: string, recipient?: Address) => {
     if (!vaultAddress) {
       throw new Error("Vault address not provided");
     }
+
+    resetTxState();
 
     const recipientAddress = recipient || address;
     if (!recipientAddress) {
@@ -79,8 +106,8 @@ export function useHBARWithdraw(vaultAddress?: Address) {
     isPending,
     isConfirming,
     isSuccess,
-    error,
-    hash,
+    error: txError,
+    hash: txHash,
     refetchHbarBalance,
   };
 }

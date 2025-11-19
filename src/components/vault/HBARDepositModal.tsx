@@ -1,4 +1,4 @@
-// components/vault/HBARDepositModal.tsx - Enhanced Version
+// components/vault/HBARDepositModal.tsx - Enhanced Version with Toast
 import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
@@ -13,11 +13,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   ArrowDownToLine,
   Loader2,
-  CheckCircle,
   AlertCircle,
   AlertTriangle,
   Info,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { useHBARDeposit } from "@/hooks/useHBAROperations";
 import { useUserVaultData } from "@/hooks/useContracts";
 import {
@@ -42,10 +42,11 @@ export function HBARDepositModal({
 }: HBARDepositModalProps) {
   const [amount, setAmount] = useState("");
   const [showValidation, setShowValidation] = useState(false);
+  const { toast } = useToast();
 
   const { hbarBalanceRaw, refetchHbarBalance } = useUserVaultData(vaultAddress);
   const { validate, walletBalance } = useHBARDepositValidation();
-  const { depositHBAR, isPending, isConfirming, isSuccess, error, hash } =
+  const { depositHBAR, isPending, isConfirming, isSuccess, error, hash, resetTxState } =
     useHBARDeposit(vaultAddress);
 
   // Validate amount
@@ -64,25 +65,52 @@ export function HBARDepositModal({
     ? calculateMaxWithGas(walletBalance.value, ETH_DECIMALS)
     : "0";
 
-  // Refetch balance after successful deposit
+  // Show success toast and refetch balance
+ useEffect(() => {
+  if (isSuccess && hash && amount) {
+    toast({
+      title: "Deposit Successful! ✅",
+      description: (
+        <div>
+          Successfully deposited {parseFloat(amount).toFixed(2)} HBAR.
+          <a
+            href={`https://hashscan.io/testnet/transaction/${hash}`}
+            target="_blank"
+            className="text-primary hover:underline text-sm block"
+          >
+            View on HashScan ↗
+          </a>
+        </div>
+      ),
+      duration: 5000,
+    });
+
+    setTimeout(() => {
+      refetchHbarBalance();
+      onOpenChange(false); // close modal
+      resetTxState();      // 🔥 reset here
+      setAmount("");
+      setShowValidation(false);
+    }, 1500);
+  }
+}, [isSuccess, hash]);
+
+
+  // Show error toast
   useEffect(() => {
-    if (isSuccess) {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Transaction Failed ❌",
+        description: error?.message || "Something went wrong.",
+      });
+
       setTimeout(() => {
-        refetchHbarBalance();
+        resetTxState(); // 🔥 clear error & hash
+        setShowValidation(false);
       }, 2000);
     }
-  }, [isSuccess, refetchHbarBalance]);
-
-  // Reset and close after success
-  useEffect(() => {
-    if (isSuccess) {
-      setTimeout(() => {
-        setAmount("");
-        setShowValidation(false);
-        onOpenChange(false);
-      }, 3000);
-    }
-  }, [isSuccess, onOpenChange]);
+  }, [error]);
 
   // Reset validation when modal opens
   useEffect(() => {
@@ -235,7 +263,7 @@ export function HBARDepositModal({
             </div>
           )}
 
-          {/* Status Messages */}
+          {/* Status Messages - Only show pending/confirming in modal */}
           {isPending && (
             <Alert>
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -264,37 +292,6 @@ export function HBARDepositModal({
             </Alert>
           )}
 
-          {isSuccess && (
-            <Alert className="border-green-500 bg-green-50 dark:bg-green-900/20">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription>
-                Deposit successful! Your vault balance will update shortly.
-                {hash && (
-                  <a
-                    href={`https://hashscan.io/testnet/transaction/${hash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block mt-2 text-primary hover:underline text-xs"
-                  >
-                    View transaction ↗
-                  </a>
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {error && (
-            <Alert className="border-red-500 bg-red-50 dark:bg-red-900/20">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription>
-                <p className="font-semibold">Transaction Failed</p>
-                <p className="text-xs mt-1">
-                  {error.message || "An error occurred. Please try again."}
-                </p>
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Action Buttons */}
           <div className="flex gap-3">
             <Button
@@ -315,11 +312,6 @@ export function HBARDepositModal({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {isPending ? "Confirm..." : "Processing..."}
                 </>
-              ) : isSuccess ? (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Deposited!
-                </>
               ) : (
                 <>
                   <ArrowDownToLine className="mr-2 h-4 w-4" />
@@ -333,12 +325,3 @@ export function HBARDepositModal({
     </Dialog>
   );
 }
-
-// components/vault/HBARWithdrawModal.tsx - Enhanced Version
-import { useAccount } from "wagmi";
-import { useHBARWithdraw } from "@/hooks/useHBAROperations";
-import {
-  useHBARWithdrawValidation,
-  useRecipientValidation,
-} from "@/hooks/useBalanceValidation";
-import { ArrowUpFromLine } from "lucide-react";

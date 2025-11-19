@@ -1,4 +1,6 @@
 export const ETH_DECIMALS = 18;
+export const HBAR_DECIMALS = 8;
+export const USDC_DECIMALS = 6;
 export const USER_THRESHOLD = 0.05;
 
 export const USDC_TOKEN_ADDRESS = "0x3b81eD2601bF31fd4680B1d55F995B137a3f01c3";
