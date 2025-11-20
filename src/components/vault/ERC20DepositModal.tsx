@@ -8,12 +8,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   ArrowDownToLine, 
   Loader2, 
-  CheckCircle, 
   AlertCircle, 
   AlertTriangle, 
   Info,
   Coins 
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { useERC20Deposit, useERC20TokenInfo } from "@/hooks/useERC20Operations";
 import { useUserVaultData } from "@/hooks/useContracts";
 import { formatUnits } from "viem";
@@ -35,6 +35,7 @@ export function ERC20DepositModal({
 }: ERC20DepositModalProps) {
   const [amount, setAmount] = useState("");
   const [showValidation, setShowValidation] = useState(false);
+  const { toast } = useToast();
 
   const { address: userAddress } = useAccount();
   const { erc20BalanceRaw, refetchHbarBalance } = useUserVaultData(vaultAddress);
@@ -53,6 +54,7 @@ export function ERC20DepositModal({
     isSuccess, 
     error, 
     hash,
+    resetTxState,
     refetchBalance 
   } = useERC20Deposit(vaultAddress, tokenAddress);
 
@@ -66,7 +68,6 @@ export function ERC20DepositModal({
 
     const numAmount = parseFloat(amount);
 
-    // Check if valid number
     if (isNaN(numAmount) || numAmount <= 0) {
       return { 
         isValid: false, 
@@ -74,7 +75,6 @@ export function ERC20DepositModal({
       };
     }
 
-    // Check decimal places
     const decimalPlaces = amount.split('.')[1]?.length || 0;
     if (decimalPlaces > decimals) {
       return { 
@@ -83,7 +83,6 @@ export function ERC20DepositModal({
       };
     }
 
-    // Check if exceeds balance
     const maxBalance = parseFloat(walletBalance);
     if (numAmount > maxBalance) {
       return { 
@@ -92,7 +91,6 @@ export function ERC20DepositModal({
       };
     }
 
-    // Warning for depositing entire balance
     if (numAmount === maxBalance) {
       return { 
         isValid: true,
@@ -103,27 +101,66 @@ export function ERC20DepositModal({
     return { isValid: true };
   }, [amount, showValidation, walletBalance, decimals, symbol]);
 
-  // Refetch balances after successful deposit
+  // Show success toast
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && hash && amount) {
+      toast({
+        title: `${symbol} Deposit Successful! ✅`,
+        description: (
+          <div className="space-y-2">
+            <p>
+              Successfully deposited {parseFloat(amount).toFixed(Math.min(2, decimals))} {symbol} to your vault.
+            </p>
+            <a
+              href={`https://hashscan.io/testnet/transaction/${hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline text-sm block"
+            >
+              View on HashScan ↗
+            </a>
+          </div>
+        ),
+        duration: 5000,
+      });
+
       setTimeout(() => {
         refetchBalance();
         refetchUserBalance();
         refetchHbarBalance();
       }, 2000);
-    }
-  }, [isSuccess, refetchBalance, refetchUserBalance, refetchHbarBalance]);
 
-  // Reset and close after success
-  useEffect(() => {
-    if (isSuccess) {
       setTimeout(() => {
         setAmount("");
+        resetTxState();
         setShowValidation(false);
         onOpenChange(false);
-      }, 3000);
+      }, 1500);
     }
-  }, [isSuccess, onOpenChange]);
+  }, [isSuccess, hash, amount, symbol, decimals, toast, refetchBalance, refetchUserBalance, refetchHbarBalance, onOpenChange]);
+
+  // Show error toast
+  useEffect(() => {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Deposit Failed ❌",
+        description: (
+          <div className="space-y-1">
+            <p className="font-semibold">{symbol} deposit could not be completed</p>
+            <p className="text-sm opacity-90">
+              {error.message || "An error occurred. Please try again."}
+            </p>
+          </div>
+        ),
+        duration: 7000,
+      });
+      setTimeout(() => {
+        resetTxState(); // 🔥 clear error & hash
+        setShowValidation(false);
+      }, 2000);
+    }
+  }, [error, symbol, toast]);
 
   // Reset validation when modal opens
   useEffect(() => {
@@ -133,14 +170,9 @@ export function ERC20DepositModal({
   }, [open]);
 
   const handleAmountChange = (value: string) => {
-    // Allow only numbers and decimal point
     const formatted = value.replace(/[^\d.]/g, '');
-    
-    // Prevent multiple decimal points
     const parts = formatted.split('.');
     if (parts.length > 2) return;
-    
-    // Limit decimal places
     if (parts[1] && parts[1].length > decimals) return;
     
     setAmount(formatted);
@@ -317,37 +349,6 @@ export function ERC20DepositModal({
             </Alert>
           )}
 
-          {isSuccess && (
-            <Alert className="border-green-500 bg-green-50 dark:bg-green-900/20">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription>
-                Deposit successful! Your vault balance will update shortly.
-                {hash && (
-                  <a
-                    href={`https://hashscan.io/testnet/transaction/${hash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block mt-2 text-primary hover:underline text-xs"
-                  >
-                    View transaction ↗
-                  </a>
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {error && (
-            <Alert className="border-red-500 bg-red-50 dark:bg-red-900/20">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription>
-                <p className="font-semibold">Transaction Failed</p>
-                <p className="text-xs mt-1">
-                  {error.message || "An error occurred. Please try again."}
-                </p>
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Action Buttons */}
           <div className="flex gap-3">
             <Button
@@ -367,11 +368,6 @@ export function ERC20DepositModal({
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {isPending ? "Confirm..." : "Processing..."}
-                </>
-              ) : isSuccess ? (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Deposited!
                 </>
               ) : (
                 <>

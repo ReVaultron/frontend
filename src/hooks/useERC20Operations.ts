@@ -1,40 +1,17 @@
 // hooks/useERC20Operations.ts
 import { useState, useEffect } from "react";
 import { useWaitForTransactionReceipt, useReadContract, useAccount } from "wagmi";
-import { 
-  useUserVaultWrite, 
-  useUserVaultData 
-} from "@/hooks/useContracts";
-import { parseUnits, formatUnits, erc20Abi } from "viem";
+import { useUserVaultWrite, useUserVaultData } from "@/hooks/useContracts";
+import { parseUnits, erc20Abi } from "viem";
 import type { Address } from "viem";
 
-// ERC20 tokens typically use 18 decimals (but can vary)
 const DEFAULT_ERC20_DECIMALS = 18;
 
-/**
- * Hook to get ERC20 token information (decimals, symbol, balance)
- */
+/* --- 1️⃣ ERC20 Info Hook --- */
 export function useERC20TokenInfo(tokenAddress?: Address, accountAddress?: Address) {
-  const { data: decimals } = useReadContract({
-    address: tokenAddress,
-    abi: erc20Abi,
-    functionName: "decimals",
-    query: { enabled: !!tokenAddress },
-  });
-
-  const { data: symbol } = useReadContract({
-    address: tokenAddress,
-    abi: erc20Abi,
-    functionName: "symbol",
-    query: { enabled: !!tokenAddress },
-  });
-
-  const { data: name } = useReadContract({
-    address: tokenAddress,
-    abi: erc20Abi,
-    functionName: "name",
-    query: { enabled: !!tokenAddress },
-  });
+  const { data: decimals } = useReadContract({ address: tokenAddress, abi: erc20Abi, functionName: "decimals" });
+  const { data: symbol } = useReadContract({ address: tokenAddress, abi: erc20Abi, functionName: "symbol" });
+  const { data: name } = useReadContract({ address: tokenAddress, abi: erc20Abi, functionName: "name" });
 
   const { data: balance, refetch: refetchBalance } = useReadContract({
     address: tokenAddress,
@@ -44,115 +21,69 @@ export function useERC20TokenInfo(tokenAddress?: Address, accountAddress?: Addre
     query: { enabled: !!(tokenAddress && accountAddress) },
   });
 
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: tokenAddress,
-    abi: erc20Abi,
-    functionName: "allowance",
-    args: accountAddress ? [accountAddress, accountAddress] : undefined,
-    query: { enabled: !!(tokenAddress && accountAddress) },
-  });
-
   return {
     decimals: decimals ? Number(decimals) : DEFAULT_ERC20_DECIMALS,
     symbol: symbol as string | undefined,
     name: name as string | undefined,
     balance: balance || BigInt(0),
-    allowance: allowance || BigInt(0),
     refetchBalance,
-    refetchAllowance,
   };
 }
 
-/**
- * Hook to approve ERC20 token spending
- */
+/* --- 2️⃣ Approve Tokens --- */
 export function useERC20Approve(tokenAddress?: Address, spenderAddress?: Address) {
   const [hash, setHash] = useState<`0x${string}` | undefined>();
-  const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  const resetTxState = () => {
+    setHash(undefined);
+    setError(null);
+  };
 
   const approve = async (amount: bigint) => {
-    if (!tokenAddress || !spenderAddress) {
-      throw new Error("Token or spender address not provided");
-    }
-
-    setIsPending(true);
-    setError(null);
+    if (!tokenAddress || !spenderAddress) throw new Error("Token or spender address not provided");
+    resetTxState();
 
     try {
-      // This would typically use useWriteContract
-      // For now, showing the structure
-      console.log("Approving", amount, "of", tokenAddress, "for", spenderAddress);
-      
-      // Simulated approval - replace with actual implementation
-      // const { writeContract } = useWriteContract();
-      // await writeContract({
-      //   address: tokenAddress,
-      //   abi: erc20Abi,
-      //   functionName: "approve",
-      //   args: [spenderAddress, amount],
-      // });
-      
+      console.log("Approving ERC20:", amount.toString());
+      // TODO: integrate with writeContract
     } catch (err) {
       setError(err as Error);
       throw err;
-    } finally {
-      setIsPending(false);
     }
   };
 
-  return {
-    approve,
-    isPending,
-    isConfirming,
-    isSuccess,
-    error,
-    hash,
-  };
+  return { approve, isConfirming, isSuccess, error, hash, resetTxState };
 }
 
-/**
- * Hook to deposit ERC20 tokens into vault
- */
+/* --- 3️⃣ Deposit ERC20 into Vault --- */
 export function useERC20Deposit(vaultAddress?: Address, tokenAddress?: Address) {
-  const {address} = useAccount();
-  const { depositERC20, isPending, isSuccess, error, hash } = useUserVaultWrite(vaultAddress);
+  const { address } = useAccount();
+  const { depositERC20, isPending, isSuccess, error, hash, resetTxState } = useUserVaultWrite(vaultAddress);
   const { decimals, balance, refetchBalance } = useERC20TokenInfo(tokenAddress, address);
-  const { erc20BalanceRaw, refetchHbarBalance } = useUserVaultData(vaultAddress);
-  console.log('error', error)
+  const { refetchHbarBalance } = useUserVaultData(vaultAddress);
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
 
   const depositTokens = async (amount: string) => {
-    if (!tokenAddress) {
-      throw new Error("Token address not provided");
-    }
+    if (!vaultAddress || !tokenAddress) throw new Error("Vault or Token address missing");
+    resetTxState();
 
-    if (!vaultAddress) {
-      throw new Error("Vault address not provided");
-    }
-
-    // Check if user has sufficient balance
-    if (balance < BigInt(amount)) {
-      throw new Error("Insufficient token balance");
-    }
-
-    await depositERC20(tokenAddress, BigInt(amount));
+    const smallestUnit = parseUnits(amount, decimals);
+    if (balance < smallestUnit) throw new Error("Insufficient token balance");
+    await depositERC20(tokenAddress, smallestUnit);
   };
 
-  // Refetch balances after successful deposit
   useEffect(() => {
     if (isSuccess) {
-      const timer = setTimeout(() => {
+      setTimeout(() => {
         refetchBalance();
         refetchHbarBalance();
+        resetTxState();
       }, 2000);
-      return () => clearTimeout(timer);
     }
-  }, [isSuccess, refetchBalance, refetchHbarBalance]);
+  }, [isSuccess]);
 
   return {
     depositTokens,
@@ -163,50 +94,36 @@ export function useERC20Deposit(vaultAddress?: Address, tokenAddress?: Address) 
     hash,
     decimals,
     balance,
-    refetchBalance,
+    resetTxState,
   };
 }
 
-/**
- * Hook to withdraw ERC20 tokens from vault
- */
+/* --- 4️⃣ Withdraw ERC20 from Vault --- */
 export function useERC20Withdraw(vaultAddress?: Address, tokenAddress?: Address) {
-  const { withdrawERC20To, isPending, isSuccess, error, hash } = useUserVaultWrite(vaultAddress);
+  const { withdrawERC20To, isPending, isSuccess, error, hash, resetTxState } = useUserVaultWrite(vaultAddress);
   const { erc20BalanceRaw, refetchHbarBalance } = useUserVaultData(vaultAddress);
   const { decimals, refetchBalance } = useERC20TokenInfo(tokenAddress, vaultAddress);
-  
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
 
   const withdrawTokens = async (amount: string, recipient: Address) => {
-    if (!tokenAddress) {
-      throw new Error("Token address not provided");
-    }
+    if (!vaultAddress || !tokenAddress) throw new Error("Vault or Token address missing");
+    resetTxState();
 
-    if (!vaultAddress) {
-      throw new Error("Vault address not provided");
-    }
+    const smallestUnit = parseUnits(amount, decimals);
+    if (erc20BalanceRaw < smallestUnit) throw new Error("Insufficient vault balance");
 
-    // Convert to smallest unit based on token decimals
-    const amountInSmallestUnit = parseUnits(amount, decimals);
-
-    // Verify sufficient vault balance
-    if (erc20BalanceRaw < amountInSmallestUnit) {
-      throw new Error("Insufficient vault balance");
-    }
-
-    await withdrawERC20To(tokenAddress, amountInSmallestUnit, recipient);
+    await withdrawERC20To(tokenAddress, smallestUnit, recipient);
   };
 
-  // Refetch balances after successful withdrawal
   useEffect(() => {
     if (isSuccess) {
-      const timer = setTimeout(() => {
+      setTimeout(() => {
         refetchBalance();
         refetchHbarBalance();
+        resetTxState();
       }, 2000);
-      return () => clearTimeout(timer);
     }
-  }, [isSuccess, refetchBalance, refetchHbarBalance]);
+  }, [isSuccess]);
 
   return {
     withdrawTokens,
@@ -216,22 +133,6 @@ export function useERC20Withdraw(vaultAddress?: Address, tokenAddress?: Address)
     error,
     hash,
     decimals,
-    vaultBalance: erc20BalanceRaw,
-    refetchBalance,
-  };
-}
-
-/**
- * Hook to get comprehensive ERC20 token data for a vault
- */
-export function useVaultERC20Data(vaultAddress?: Address, tokenAddress?: Address) {
-  const vaultData = useUserVaultData(vaultAddress);
-  const tokenInfo = useERC20TokenInfo(tokenAddress, vaultAddress);
-
-  return {
-    ...vaultData,
-    ...tokenInfo,
-    vaultERC20Balance: vaultData.erc20BalanceRaw,
-    vaultERC20BalanceFormatted: vaultData.erc20Balance,
+    resetTxState,
   };
 }

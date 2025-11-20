@@ -78,14 +78,13 @@ export function useFactoryVaultData() {
     abi: FACTORY_VAULT_ABI,
     functionName: "usdcTokenAddress",
   });
-  console.log("usdcTokenAddress", usdcTokenAddress);
 
   return {
     creationFee: creationFee ? Number(creationFee) / 1e18 : 0,
-    creationFeeRaw: creationFee || BigInt(0),
+    creationFeeRaw: creationFee ? BigInt(creationFee as string | number | bigint) : BigInt(0),
     vaultCount: vaultCount ? Number(vaultCount) : 0,
     balance: balance ? Number(balance) / 1e18 : 0,
-    balanceRaw: balance || BigInt(0),
+    balanceRaw: balance ? BigInt(balance as string | number | bigint) : BigInt(0),
     usdcTokenAddress: usdcTokenAddress as Address | undefined,
     refetchFee,
     refetchCount,
@@ -182,18 +181,17 @@ export function useUserVaultData(vaultAddress?: Address) {
     functionName: "getERC20Balance",
     query: { enabled: !!vaultAddress },
   });
-  console.log("getERC20Balance", getERC20Balance);
-
+  
   return {
     owner: owner as Address | undefined,
     tokens: (tokens as Address[]) || [],
     tokenCount: tokenCount ? Number(tokenCount) : 0,
     hbarBalance: hbarBalance ? (Number(hbarBalance) / 1e18).toFixed(4) : "0",
-    hbarBalanceRaw: hbarBalance || BigInt(0),
+    hbarBalanceRaw: hbarBalance ? BigInt(hbarBalance as string | number | bigint) : BigInt(0),
     erc20Balance: getERC20Balance
       ? (Number(getERC20Balance) / 1e18).toFixed(4)
       : "0",
-    erc20BalanceRaw: getERC20Balance || BigInt(0),
+    erc20BalanceRaw: getERC20Balance ? BigInt(getERC20Balance as string | number | bigint) : BigInt(0),
     address: vaultAddress,
     refetchTokens,
     refetchHbarBalance,
@@ -259,6 +257,7 @@ export function useUserVaultWrite(vaultAddress?: Address) {
     isSuccess,
     error,
     data: hash,
+    reset
   } = useWriteContract();
 
   /**
@@ -433,6 +432,7 @@ export function useUserVaultWrite(vaultAddress?: Address) {
     isSuccess,
     error,
     hash,
+    resetTxState: reset,
   };
 }
 

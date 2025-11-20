@@ -18,6 +18,7 @@ import { useUserVaultData } from "@/hooks/useContracts";
 import { formatUnits, isAddress } from "viem";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
+import { useToast } from "@/hooks/use-toast";
 
 interface ERC20WithdrawModalProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function ERC20WithdrawModal({
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState<Address>("0x0000000000000000000000000000000000000000");
   const [showValidation, setShowValidation] = useState(false);
+  const { toast } = useToast();
 
   const { address: userAddress } = useAccount();
   const { erc20BalanceRaw, refetchHbarBalance } = useUserVaultData(vaultAddress);
@@ -51,40 +53,33 @@ export function ERC20WithdrawModal({
     isSuccess, 
     error, 
     hash,
+    resetTxState,
     refetchBalance 
   } = useERC20Withdraw(vaultAddress, tokenAddress);
 
-  // Format vault balance
   const vaultBalance = formatUnits(erc20BalanceRaw, decimals);
 
-  // Auto-fill recipient with connected address
+  // Auto-fill recipient
   useEffect(() => {
     if (userAddress) {
       setRecipient(userAddress);
     }
   }, [userAddress]);
 
-  // Validate recipient address
+  // Validations
   const recipientValidation = useMemo(() => {
     if (!showValidation || !recipient) return { isValid: true };
-
     if (!isAddress(recipient)) {
-      return { 
-        isValid: false, 
-        error: "Invalid recipient address" 
-      };
+      return { isValid: false, error: "Invalid recipient address" };
     }
-
     return { isValid: true };
   }, [recipient, showValidation]);
 
-  // Validate amount
   const amountValidation = useMemo(() => {
     if (!showValidation || !amount) return { isValid: true };
 
     const numAmount = parseFloat(amount);
 
-    // Check if valid number
     if (isNaN(numAmount) || numAmount <= 0) {
       return { 
         isValid: false, 
@@ -92,7 +87,6 @@ export function ERC20WithdrawModal({
       };
     }
 
-    // Check decimal places
     const decimalPlaces = amount.split('.')[1]?.length || 0;
     if (decimalPlaces > decimals) {
       return { 
@@ -101,7 +95,6 @@ export function ERC20WithdrawModal({
       };
     }
 
-    // Check if exceeds vault balance
     const maxBalance = parseFloat(vaultBalance);
     if (numAmount > maxBalance) {
       return { 
@@ -110,7 +103,6 @@ export function ERC20WithdrawModal({
       };
     }
 
-    // Warning for withdrawing entire balance
     if (numAmount === maxBalance && maxBalance > 0) {
       return { 
         isValid: true,
@@ -123,28 +115,66 @@ export function ERC20WithdrawModal({
 
   const isFormValid = amountValidation.isValid && recipientValidation.isValid;
 
-  // Refetch balances after successful withdrawal
+  // Show success toast
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && hash) {
+      toast({
+        title: `${symbol} Withdrawal Successful! ✅`,
+        description: (
+          <div className="space-y-2">
+            <p>
+              Successfully withdrew {parseFloat(amount).toFixed(Math.min(2, decimals))} {symbol} from your vault.
+            </p>
+            <a
+              href={`https://hashscan.io/testnet/transaction/${hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline text-sm block"
+            >
+              View on HashScan ↗
+            </a>
+          </div>
+        ),
+        duration: 5000,
+      });
+
       setTimeout(() => {
         refetchBalance();
         refetchHbarBalance();
       }, 2000);
-    }
-  }, [isSuccess, refetchBalance, refetchHbarBalance]);
 
-  // Reset and close after success
-  useEffect(() => {
-    if (isSuccess) {
       setTimeout(() => {
         setAmount("");
+        resetTxState();
         setShowValidation(false);
         onOpenChange(false);
-      }, 3000);
+      }, 1500);
     }
-  }, [isSuccess, onOpenChange]);
+  }, [isSuccess, hash, amount, symbol, decimals, toast, refetchBalance, refetchHbarBalance, onOpenChange]);
 
-  // Reset validation when modal opens
+  // Show error toast
+  useEffect(() => {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Withdrawal Failed ❌",
+        description: (
+          <div className="space-y-1">
+            <p className="font-semibold">{symbol} withdrawal could not be completed</p>
+            <p className="text-sm opacity-90">
+              {error.message || "Withdrawal failed. Please try again."}
+            </p>
+          </div>
+        ),
+        duration: 7000,
+      });
+      setTimeout(() => {
+        resetTxState(); // 🔥 clear error & hash
+        setShowValidation(false);
+      }, 2000);
+    }
+  }, [error, symbol, toast]);
+
   useEffect(() => {
     if (open) {
       setShowValidation(false);
@@ -152,14 +182,9 @@ export function ERC20WithdrawModal({
   }, [open]);
 
   const handleAmountChange = (value: string) => {
-    // Allow only numbers and decimal point
     const formatted = value.replace(/[^\d.]/g, '');
-    
-    // Prevent multiple decimal points
     const parts = formatted.split('.');
     if (parts.length > 2) return;
-    
-    // Limit decimal places
     if (parts[1] && parts[1].length > decimals) return;
     
     setAmount(formatted);
@@ -246,7 +271,6 @@ export function ERC20WithdrawModal({
             )}
           </div>
 
-          {/* Recipient Validation */}
           {showValidation && recipientValidation.error && (
             <Alert className="border-red-500">
               <AlertCircle className="h-4 w-4 text-red-600" />
@@ -289,7 +313,6 @@ export function ERC20WithdrawModal({
             </div>
           </div>
 
-          {/* Amount Validation */}
           {showValidation && amountValidation.error && (
             <Alert className="border-red-500">
               <AlertCircle className="h-4 w-4 text-red-600" />
@@ -330,9 +353,7 @@ export function ERC20WithdrawModal({
           {isPending && (
             <Alert>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <AlertDescription>
-                Waiting for wallet confirmation...
-              </AlertDescription>
+              <AlertDescription>Waiting for wallet confirmation...</AlertDescription>
             </Alert>
           )}
 
@@ -351,37 +372,6 @@ export function ERC20WithdrawModal({
                     View on HashScan ↗
                   </a>
                 )}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {isSuccess && (
-            <Alert className="border-green-500 bg-green-50 dark:bg-green-900/20">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription>
-                Withdrawal successful!
-                {hash && (
-                  <a
-                    href={`https://hashscan.io/testnet/transaction/${hash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block mt-2 text-primary hover:underline text-xs"
-                  >
-                    View transaction ↗
-                  </a>
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {error && (
-            <Alert className="border-red-500 bg-red-50 dark:bg-red-900/20">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription>
-                <p className="font-semibold">Transaction Failed</p>
-                <p className="text-xs mt-1">
-                  {error.message || "Withdrawal failed. Please try again."}
-                </p>
               </AlertDescription>
             </Alert>
           )}
@@ -405,11 +395,6 @@ export function ERC20WithdrawModal({
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {isPending ? "Confirm..." : "Processing..."}
-                </>
-              ) : isSuccess ? (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Withdrawn!
                 </>
               ) : (
                 <>

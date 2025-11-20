@@ -1,4 +1,3 @@
-// hooks/useHTSTokenOperations.ts
 import { useState, useEffect } from "react";
 import { useWaitForTransactionReceipt } from "wagmi";
 import {
@@ -11,6 +10,7 @@ import { parseUnits } from "viem";
 import type { Address } from "viem";
 import { ETH_DECIMALS } from "@/lib/constants";
 
+/* --- 1️⃣ HTS Token Association --- */
 export function useTokenAssociationOperations(
   vaultAddress?: Address,
   tokenAddress?: Address
@@ -19,16 +19,14 @@ export function useTokenAssociationOperations(
     vaultAddress,
     tokenAddress
   );
-  const { associateToken, isPending, isSuccess, error, hash } =
+  const { associateToken, isPending, isSuccess, error, hash, resetTxState } =
     useUserVaultWrite(vaultAddress);
 
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
 
   const associate = async () => {
-    if (!tokenAddress) {
-      throw new Error("Token address not provided");
-    }
-
+    if (!tokenAddress) throw new Error("Token address not provided");
+    resetTxState();
     await associateToken(tokenAddress);
   };
 
@@ -41,11 +39,13 @@ export function useTokenAssociationOperations(
     isSuccess,
     error,
     hash,
+    resetTxState,
   };
 }
 
+/* --- 2️⃣ HTS Deposit --- */
 export function useHTSDeposit(vaultAddress?: Address, tokenAddress?: Address) {
-  const { deposit, isPending, isSuccess, error, hash } =
+  const { deposit, isPending, isSuccess, error, hash, resetTxState } =
     useUserVaultWrite(vaultAddress);
   const { isVaultAssociated } = useTokenAssociation(vaultAddress, tokenAddress);
   const { refetchTracked, refetchActual } = useTokenBalance(
@@ -56,20 +56,23 @@ export function useHTSDeposit(vaultAddress?: Address, tokenAddress?: Address) {
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
 
   const depositTokens = async (amount: string) => {
-    if (!tokenAddress) {
-      throw new Error("Token address not provided");
-    }
+    if (!tokenAddress) throw new Error("Token address not provided");
+    if (!isVaultAssociated) throw new Error("Vault not associated with token");
 
-    if (!isVaultAssociated) {
-      throw new Error("Token not associated with vault");
-    }
-
-    // Convert to smallest unit with 8 decimals
-    const amountInSmallestUnit = parseUnits(amount, ETH_DECIMALS);
-    const int64Amount = toInt64(amountInSmallestUnit);
-
-    await deposit(tokenAddress, int64Amount);
+    resetTxState();
+    const smallest = parseUnits(amount, ETH_DECIMALS);
+    await deposit(tokenAddress, toInt64(smallest));
   };
+
+  useEffect(() => {
+    if (isSuccess) {
+      setTimeout(() => {
+        refetchTracked();
+        refetchActual();
+        resetTxState();
+      }, 2000);
+    }
+  }, [isSuccess]);
 
   return {
     depositTokens,
@@ -78,50 +81,53 @@ export function useHTSDeposit(vaultAddress?: Address, tokenAddress?: Address) {
     isSuccess,
     error,
     hash,
-    refetchBalance: () => {
-      refetchTracked();
-      refetchActual();
-    },
+    resetTxState,
   };
 }
 
+/* --- 3️⃣ HTS Withdraw --- */
 export function useHTSWithdraw(vaultAddress?: Address, tokenAddress?: Address) {
-  const { withdrawTo, syncTokenBalance, isPending, isSuccess, error, hash } =
-    useUserVaultWrite(vaultAddress);
+  const {
+    withdrawTo,
+    syncTokenBalance,
+    isPending,
+    isSuccess,
+    error,
+    hash,
+    resetTxState,
+  } = useUserVaultWrite(vaultAddress);
   const { actualBalance, needsSync, refetchTracked, refetchActual } =
     useTokenBalance(vaultAddress, tokenAddress);
-
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
+
   const [isSyncing, setIsSyncing] = useState(false);
 
   const withdrawTokens = async (amount: string, recipient: Address) => {
-    if (!tokenAddress) {
-      throw new Error("Token address not provided");
-    }
+    if (!tokenAddress) throw new Error("Token address not provided");
+    resetTxState();
 
-    // Sync if needed
     if (needsSync) {
       setIsSyncing(true);
-      try {
-        await syncTokenBalance(tokenAddress);
-        // Wait for sync to complete
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-      } finally {
-        setIsSyncing(false);
-      }
+      await syncTokenBalance(tokenAddress);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      setIsSyncing(false);
     }
 
-    // Convert to smallest unit
-    const amountInSmallestUnit = parseUnits(amount, ETH_DECIMALS);
-    const int64Amount = toInt64(amountInSmallestUnit);
+    const intAmount = toInt64(parseUnits(amount, ETH_DECIMALS));
+    if (actualBalance < intAmount) throw new Error("Insufficient balance");
 
-    // Verify sufficient balance
-    if (actualBalance < int64Amount) {
-      throw new Error("Insufficient balance");
-    }
-
-    await withdrawTo(tokenAddress, int64Amount, recipient);
+    await withdrawTo(tokenAddress, intAmount, recipient);
   };
+
+  useEffect(() => {
+    if (isSuccess) {
+      setTimeout(() => {
+        refetchTracked();
+        refetchActual();
+        resetTxState();
+      }, 2000);
+    }
+  }, [isSuccess]);
 
   return {
     withdrawTokens,
@@ -131,9 +137,6 @@ export function useHTSWithdraw(vaultAddress?: Address, tokenAddress?: Address) {
     isSuccess,
     error,
     hash,
-    refetchBalance: () => {
-      refetchTracked();
-      refetchActual();
-    },
+    resetTxState,
   };
 }

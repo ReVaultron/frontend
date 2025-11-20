@@ -30,13 +30,11 @@ const Dashboard = () => {
   const { address: userAddress, isConnected } = useAccount();
   const { vaultAddress, hasVault } = useUserVaultAddress(userAddress);
   const [createVaultOpen, setCreateVaultOpen] = useState(false);
-  console.log("createVaultOpen", createVaultOpen);
+
   // Get wallet balance
   const { data: walletBalance } = useBalance({
     address: userAddress,
   });
-
-  console.log("hasVault", hasVault);
 
   // Get vault data
   const vaultData = useUserVaultData(hasVault ? vaultAddress : undefined);
@@ -52,8 +50,6 @@ const Dashboard = () => {
     refreshInterval: 60000, // Update every 60 seconds
   });
 
-  console.log("priceLoading", priceLoading);
-  console.log("vaultData", vaultData);
   // Calculate total deposited in USD
   const totalDeposited = useMemo(() => {
     if (!hasVault || !vaultData.hbarBalanceRaw || !hbarPrice) return "0.00";

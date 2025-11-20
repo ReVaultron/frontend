@@ -29,6 +29,7 @@ import { useTokenBalance } from "@/hooks/useContracts";
 import { formatUnits } from "viem";
 import type { Address } from "viem";
 import { ETH_DECIMALS } from "@/lib/constants";
+import { useToast } from "@/hooks/use-toast";
 
 interface HTSWithdrawModalProps {
   open: boolean;
@@ -48,15 +49,11 @@ export function HTSWithdrawModal({
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState<Address>("0x0000000000000000000000000000000000000000");
   const [showValidation, setShowValidation] = useState(false);
+  const { toast } = useToast();
 
   const { address } = useAccount();
-  const { actualBalance, needsSync } = useTokenBalance(
-    vaultAddress,
-    tokenAddress
-  );
-  const { validate: validateAmount } = useHTSWithdrawValidation(
-    
-  );
+  const { actualBalance, needsSync } = useTokenBalance(vaultAddress, tokenAddress);
+  const { validate: validateAmount } = useHTSWithdrawValidation();
   const { validate: validateRecipient } = useRecipientValidation();
   const {
     withdrawTokens,
@@ -66,6 +63,7 @@ export function HTSWithdrawModal({
     isSuccess,
     error,
     hash,
+    resetTxState,
     refetchBalance,
   } = useHTSWithdraw(vaultAddress, tokenAddress);
 
@@ -76,7 +74,7 @@ export function HTSWithdrawModal({
     }
   }, [address]);
 
-  // Validate amount and recipient
+  // Validations
   const amountValidation = useMemo(() => {
     if (!showValidation || !amount) return { isValid: true };
     return validateAmount(amount, BigInt(actualBalance));
@@ -89,27 +87,63 @@ export function HTSWithdrawModal({
 
   const isFormValid = amountValidation.isValid && recipientValidation.isValid;
 
-  // Refetch after success
+  // Show success toast
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && hash) {
+      toast({
+        title: `${tokenSymbol} Withdrawal Successful! ✅`,
+        description: (
+          <div className="space-y-2">
+            <p>
+              Successfully withdrew {parseFloat(amount).toFixed(2)} {tokenSymbol} from your vault.
+            </p>
+            <a
+              href={`https://hashscan.io/testnet/transaction/${hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline text-sm block"
+            >
+              View on HashScan ↗
+            </a>
+          </div>
+        ),
+        duration: 5000,
+      });
+
       setTimeout(() => {
         refetchBalance();
       }, 2000);
-    }
-  }, [isSuccess, refetchBalance]);
 
-  // Reset and close
-  useEffect(() => {
-    if (isSuccess) {
       setTimeout(() => {
         setAmount("");
+        resetTxState();
         setShowValidation(false);
         onOpenChange(false);
-      }, 3000);
+      }, 1500);
     }
-  }, [isSuccess, onOpenChange]);
+  }, [isSuccess, hash, amount, tokenSymbol, toast, refetchBalance, onOpenChange]);
 
-  // Reset validation when modal opens
+  // Show error toast
+  useEffect(() => {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Withdrawal Failed ❌",
+        description: (
+          <div className="space-y-1">
+            <p className="font-semibold">{tokenSymbol} withdrawal could not be completed</p>
+            <p className="text-sm opacity-90">{error.message}</p>
+          </div>
+        ),
+        duration: 7000,
+      });
+      setTimeout(() => {
+        resetTxState(); // 🔥 clear error & hash
+        setShowValidation(false);
+      }, 2000);
+    }
+  }, [error, tokenSymbol, toast]);
+
   useEffect(() => {
     if (open) {
       setShowValidation(false);
@@ -148,8 +182,7 @@ export function HTSWithdrawModal({
   };
 
   const maxWithdraw = formatUnits(BigInt(actualBalance), ETH_DECIMALS);
-  const canWithdraw =
-    isFormValid && !isSyncing && !isPending && !isConfirming && !isSuccess;
+  const canWithdraw = isFormValid && !isSyncing && !isPending && !isConfirming && !isSuccess;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -159,36 +192,27 @@ export function HTSWithdrawModal({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Sync Warning */}
           {needsSync && !isSyncing && (
             <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-900/20">
               <Info className="h-4 w-4 text-blue-600" />
-              <AlertDescription>
-                Balance will be synced with HTS before withdrawal
-              </AlertDescription>
+              <AlertDescription>Balance will be synced with HTS before withdrawal</AlertDescription>
             </Alert>
           )}
 
           {isSyncing && (
             <Alert>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <AlertDescription>
-                Syncing balance with Hedera Token Service...
-              </AlertDescription>
+              <AlertDescription>Syncing balance with Hedera Token Service...</AlertDescription>
             </Alert>
           )}
 
-          {/* Balance Info */}
           <div className="p-4 bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-lg border">
-            <p className="text-xs text-muted-foreground mb-1">
-              Available to Withdraw
-            </p>
+            <p className="text-xs text-muted-foreground mb-1">Available to Withdraw</p>
             <p className="text-2xl font-bold">
               {parseFloat(maxWithdraw).toFixed(2)} {tokenSymbol}
             </p>
           </div>
 
-          {/* Recipient */}
           <div className="space-y-2">
             <Label htmlFor="recipient">Recipient Address</Label>
             <Input
@@ -212,7 +236,6 @@ export function HTSWithdrawModal({
             )}
           </div>
 
-          {/* Recipient Validation */}
           {showValidation && recipientValidation.error && (
             <Alert className="border-red-500">
               <AlertCircle className="h-4 w-4 text-red-600" />
@@ -220,7 +243,6 @@ export function HTSWithdrawModal({
             </Alert>
           )}
 
-          {/* Amount */}
           <div className="space-y-2">
             <div className="flex justify-between">
               <Label htmlFor="amount">Amount ({tokenSymbol})</Label>
@@ -255,7 +277,6 @@ export function HTSWithdrawModal({
             </div>
           </div>
 
-          {/* Amount Validation */}
           {showValidation && amountValidation.error && (
             <Alert className="border-red-500">
               <AlertCircle className="h-4 w-4 text-red-600" />
@@ -263,32 +284,23 @@ export function HTSWithdrawModal({
             </Alert>
           )}
 
-          {showValidation &&
-            amountValidation.warning &&
-            amountValidation.isValid && (
-              <Alert className="border-yellow-500">
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                <AlertDescription>{amountValidation.warning}</AlertDescription>
-              </Alert>
-            )}
+          {showValidation && amountValidation.warning && amountValidation.isValid && (
+            <Alert className="border-yellow-500">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription>{amountValidation.warning}</AlertDescription>
+            </Alert>
+          )}
 
-          {/* Summary */}
           {amount && parseFloat(amount) > 0 && recipient && isFormValid && (
             <div className="p-4 bg-muted/50 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Withdrawing</span>
-                <span className="font-medium">
-                  {parseFloat(amount).toFixed(2)} {tokenSymbol}
-                </span>
+                <span className="font-medium">{parseFloat(amount).toFixed(2)} {tokenSymbol}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Remaining</span>
                 <span className="font-medium">
-                  {Math.max(
-                    0,
-                    parseFloat(maxWithdraw) - parseFloat(amount)
-                  ).toFixed(2)}{" "}
-                  {tokenSymbol}
+                  {Math.max(0, parseFloat(maxWithdraw) - parseFloat(amount)).toFixed(2)} {tokenSymbol}
                 </span>
               </div>
               <div className="flex justify-between text-sm border-t pt-2 mt-2">
@@ -298,7 +310,6 @@ export function HTSWithdrawModal({
             </div>
           )}
 
-          {/* Status */}
           {isPending && (
             <Alert>
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -325,36 +336,6 @@ export function HTSWithdrawModal({
             </Alert>
           )}
 
-          {isSuccess && (
-            <Alert className="border-green-500 bg-green-50 dark:bg-green-900/20">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription>
-                Withdrawal successful!
-                {hash && (
-                  <a
-                    href={`https://hashscan.io/testnet/transaction/${hash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block mt-2 text-primary hover:underline text-xs"
-                  >
-                    View transaction ↗
-                  </a>
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {error && (
-            <Alert className="border-red-500 bg-red-50 dark:bg-red-900/20">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription>
-                <p className="font-semibold">Withdrawal Failed</p>
-                <p className="text-xs mt-1">{error.message}</p>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Actions */}
           <div className="flex gap-3">
             <Button
               variant="outline"
@@ -364,11 +345,7 @@ export function HTSWithdrawModal({
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleWithdraw}
-              disabled={!canWithdraw}
-              className="flex-1"
-            >
+            <Button onClick={handleWithdraw} disabled={!canWithdraw} className="flex-1">
               {isSyncing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -378,11 +355,6 @@ export function HTSWithdrawModal({
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {isPending ? "Confirm..." : "Processing..."}
-                </>
-              ) : isSuccess ? (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Withdrawn!
                 </>
               ) : (
                 <>

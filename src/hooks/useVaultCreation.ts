@@ -46,7 +46,7 @@ export function useVaultCreation() {
     }
 
     setCreationStep("checking");
-    const creationFeeAmount = BigInt(formatUnits(creationFeeRaw, 8) * 1e18); // Assuming 8 decimals for HBAR
+    const creationFeeAmount = creationFeeRaw * BigInt(10 ** 8); // Assuming 8 decimals for HBAR
 
     try {
       // Create vault with creation fee

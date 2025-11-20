@@ -1,4 +1,4 @@
-// components/vault/HTSDepositModal.tsx - Enhanced Version
+// components/vault/HTSDepositModal.tsx
 import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
@@ -13,12 +13,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   ArrowDownToLine,
   Loader2,
-  CheckCircle,
   AlertCircle,
   AlertTriangle,
   Info,
   Link as LinkIcon,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { useHTSDeposit } from "@/hooks/useHTSTokenOperations";
 import { useTokenBalance, useTokenAssociation } from "@/hooks/useContracts";
 import {
@@ -36,7 +36,7 @@ interface HTSDepositModalProps {
   vaultAddress: Address;
   tokenAddress: Address;
   tokenSymbol: string;
-  userTokenBalance?: bigint; // User's wallet token balance
+  userTokenBalance?: bigint;
 }
 
 export function HTSDepositModal({
@@ -50,12 +50,10 @@ export function HTSDepositModal({
   const [amount, setAmount] = useState("");
   const [showValidation, setShowValidation] = useState(false);
   const [showAssociation, setShowAssociation] = useState(false);
+  const { toast } = useToast();
 
   const { isVaultAssociated } = useTokenAssociation(vaultAddress, tokenAddress);
-  const { trackedBalance, refetchTracked } = useTokenBalance(
-    vaultAddress,
-    tokenAddress
-  );
+  const { trackedBalance, refetchTracked } = useTokenBalance(vaultAddress, tokenAddress);
   const { validate } = useHTSDepositValidation();
   const {
     depositTokens,
@@ -64,6 +62,7 @@ export function HTSDepositModal({
     isSuccess,
     error,
     hash,
+    resetTxState,
     refetchBalance,
   } = useHTSDeposit(vaultAddress, tokenAddress);
 
@@ -80,27 +79,73 @@ export function HTSDepositModal({
     return validate(amount, userTokenBalance);
   }, [amount, userTokenBalance, showValidation, validate]);
 
-  // Refetch balance after success
+  // Show success toast
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && hash) {
+      toast({
+        title: `${tokenSymbol} Deposit Successful! ✅`,
+        description: (
+          <div className="space-y-2">
+            <p>
+              Successfully deposited {parseFloat(amount).toFixed(2)} {tokenSymbol} to your vault.
+            </p>
+            <a
+              href={`https://hashscan.io/testnet/transaction/${hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline text-sm block"
+            >
+              View on HashScan ↗
+            </a>
+          </div>
+        ),
+        duration: 5000,
+      });
+
       setTimeout(() => {
         refetchBalance();
       }, 2000);
-    }
-  }, [isSuccess, refetchBalance]);
 
-  // Reset and close after success
-  useEffect(() => {
-    if (isSuccess) {
       setTimeout(() => {
         setAmount("");
+        resetTxState();
         setShowValidation(false);
         onOpenChange(false);
-      }, 3000);
+      }, 1500);
     }
-  }, [isSuccess, onOpenChange]);
+  }, [isSuccess, hash, amount, tokenSymbol, toast, refetchBalance, onOpenChange]);
 
-  // Reset validation when modal opens
+  // Show error toast
+  useEffect(() => {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Deposit Failed ❌",
+        description: (
+          <div className="space-y-1">
+            <p className="font-semibold">{tokenSymbol} deposit could not be completed</p>
+            <p className="text-sm opacity-90">{error.message}</p>
+            {error.message?.includes("not associated") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAssociation(true)}
+                className="mt-2"
+              >
+                Associate Token
+              </Button>
+            )}
+          </div>
+        ),
+        duration: 7000,
+      });
+      setTimeout(() => {
+        resetTxState(); // 🔥 clear error & hash
+        setShowValidation(false);
+      }, 2000);
+    }
+  }, [error, tokenSymbol, toast]);
+
   useEffect(() => {
     if (open) {
       setShowValidation(false);
@@ -155,7 +200,6 @@ export function HTSDepositModal({
 
   return (
     <>
-      {/* Association Modal */}
       <TokenAssociationModal
         open={showAssociation}
         onOpenChange={setShowAssociation}
@@ -164,7 +208,6 @@ export function HTSDepositModal({
         tokenSymbol={tokenSymbol}
       />
 
-      {/* Deposit Modal */}
       <Dialog open={open && !showAssociation} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -172,7 +215,6 @@ export function HTSDepositModal({
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Association Warning */}
             {!isVaultAssociated && (
               <Alert className="border-orange-500 bg-orange-50 dark:bg-orange-900/20">
                 <AlertCircle className="h-4 w-4 text-orange-600" />
@@ -191,27 +233,21 @@ export function HTSDepositModal({
               </Alert>
             )}
 
-            {/* Balance Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-muted rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">
-                  Your Balance
-                </p>
+                <p className="text-xs text-muted-foreground mb-1">Your Balance</p>
                 <p className="text-sm font-bold">
                   {parseFloat(currentUserBalance).toFixed(2)} {tokenSymbol}
                 </p>
               </div>
               <div className="p-3 bg-muted rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">
-                  Vault Balance
-                </p>
+                <p className="text-xs text-muted-foreground mb-1">Vault Balance</p>
                 <p className="text-sm font-bold">
                   {parseFloat(currentVaultBalance).toFixed(2)} {tokenSymbol}
                 </p>
               </div>
             </div>
 
-            {/* Token Info */}
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div className="flex items-start gap-2">
                 <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -220,28 +256,19 @@ export function HTSDepositModal({
                     HTS Token Information
                   </p>
                   <p className="text-blue-700 dark:text-blue-300">
-                    Address:{" "}
-                    <code className="text-xs">
-                      {tokenAddress.slice(0, 10)}...{tokenAddress.slice(-8)}
-                    </code>
+                    Address: <code className="text-xs">{tokenAddress.slice(0, 10)}...{tokenAddress.slice(-8)}</code>
                   </p>
                   <p className="text-blue-700 dark:text-blue-300">
-                    Status:{" "}
-                    {isVaultAssociated ? (
-                      <span className="text-green-600 font-semibold">
-                        ✓ Associated
-                      </span>
+                    Status: {isVaultAssociated ? (
+                      <span className="text-green-600 font-semibold">✓ Associated</span>
                     ) : (
-                      <span className="text-orange-600 font-semibold">
-                        ⚠ Not Associated
-                      </span>
+                      <span className="text-orange-600 font-semibold">⚠ Not Associated</span>
                     )}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Amount Input */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label htmlFor="amount">Amount ({tokenSymbol})</Label>
@@ -282,7 +309,6 @@ export function HTSDepositModal({
               </div>
             </div>
 
-            {/* Validation Messages */}
             {showValidation && validation.error && (
               <Alert className="border-red-500 bg-red-50 dark:bg-red-900/20">
                 <AlertCircle className="h-4 w-4 text-red-600" />
@@ -297,55 +323,35 @@ export function HTSDepositModal({
               </Alert>
             )}
 
-            {/* Transaction Summary */}
-            {amount &&
-              parseFloat(amount) > 0 &&
-              validation.isValid &&
-              isVaultAssociated && (
-                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Depositing</span>
-                    <span className="font-medium">
-                      {parseFloat(amount).toFixed(2)} {tokenSymbol}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      New vault balance
-                    </span>
-                    <span className="font-medium">
-                      {(
-                        parseFloat(currentVaultBalance) + parseFloat(amount)
-                      ).toFixed(2)}{" "}
-                      {tokenSymbol}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Remaining wallet balance
-                    </span>
-                    <span className="font-medium">
-                      {Math.max(
-                        0,
-                        parseFloat(currentUserBalance) - parseFloat(amount)
-                      ).toFixed(2)}{" "}
-                      {tokenSymbol}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm border-t pt-2 mt-2">
-                    <span className="text-muted-foreground">Gas fee</span>
-                    <span className="font-medium">~0.05 HBAR</span>
-                  </div>
+            {amount && parseFloat(amount) > 0 && validation.isValid && isVaultAssociated && (
+              <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Depositing</span>
+                  <span className="font-medium">{parseFloat(amount).toFixed(2)} {tokenSymbol}</span>
                 </div>
-              )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">New vault balance</span>
+                  <span className="font-medium">
+                    {(parseFloat(currentVaultBalance) + parseFloat(amount)).toFixed(2)} {tokenSymbol}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Remaining wallet balance</span>
+                  <span className="font-medium">
+                    {Math.max(0, parseFloat(currentUserBalance) - parseFloat(amount)).toFixed(2)} {tokenSymbol}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm border-t pt-2 mt-2">
+                  <span className="text-muted-foreground">Gas fee</span>
+                  <span className="font-medium">~0.05 HBAR</span>
+                </div>
+              </div>
+            )}
 
-            {/* Status Messages */}
             {isPending && (
               <Alert>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <AlertDescription>
-                  Confirm transaction in your wallet...
-                </AlertDescription>
+                <AlertDescription>Confirm transaction in your wallet...</AlertDescription>
               </Alert>
             )}
 
@@ -368,46 +374,6 @@ export function HTSDepositModal({
               </Alert>
             )}
 
-            {isSuccess && (
-              <Alert className="border-green-500 bg-green-50 dark:bg-green-900/20">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription>
-                  Deposit successful! Tokens transferred to vault.
-                  {hash && (
-                    <a
-                      href={`https://hashscan.io/testnet/transaction/${hash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block mt-2 text-primary hover:underline text-xs"
-                    >
-                      View transaction ↗
-                    </a>
-                  )}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {error && (
-              <Alert className="border-red-500 bg-red-50 dark:bg-red-900/20">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <AlertDescription>
-                  <p className="font-semibold">Deposit Failed</p>
-                  <p className="text-xs mt-1">{error.message}</p>
-                  {error.message?.includes("not associated") && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowAssociation(true)}
-                      className="mt-2"
-                    >
-                      Associate Token
-                    </Button>
-                  )}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Action Buttons */}
             <div className="flex gap-3">
               <Button
                 variant="outline"
@@ -417,20 +383,11 @@ export function HTSDepositModal({
               >
                 Cancel
               </Button>
-              <Button
-                onClick={handleDeposit}
-                disabled={!canDeposit}
-                className="flex-1"
-              >
+              <Button onClick={handleDeposit} disabled={!canDeposit} className="flex-1">
                 {isPending || isConfirming ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {isPending ? "Confirm..." : "Processing..."}
-                  </>
-                ) : isSuccess ? (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Deposited!
                   </>
                 ) : (
                   <>
@@ -446,12 +403,3 @@ export function HTSDepositModal({
     </>
   );
 }
-
-// components/vault/HTSWithdrawModal.tsx - Enhanced Version
-import { useAccount } from "wagmi";
-import { useHTSWithdraw } from "@/hooks/useHTSTokenOperations";
-import {
-  useHTSWithdrawValidation,
-  useRecipientValidation,
-} from "@/hooks/useBalanceValidation";
-import { ArrowUpFromLine } from "lucide-react";

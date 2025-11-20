@@ -81,17 +81,6 @@ export default function Landing() {
     },
   ];
   
-  useEffect(() => {
-  const fetchBalance = async () => {
-    const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
-    const user = "0x69e213da99117e66970584f6e81673ad1483b8e6";
-
-    const userBalanceBefore = await provider.getBalance(user);
-    console.log("userBalanceBefore", ethers.formatEther(userBalanceBefore));
-  };
-
-  fetchBalance();
-}, [isConnected]);
 
   return (
     <div className="min-h-screen bg-background">
