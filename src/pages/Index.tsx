@@ -263,7 +263,7 @@ const Dashboard = () => {
             isLive={!!hbarPrice}
             tooltip="Current USD value of your portfolio"
           />
-          <MetricCard
+          {/* <MetricCard
             title="Fees Earned"
             value={`$${feesEarned}`}
             change={changes.fees}
@@ -272,7 +272,7 @@ const Dashboard = () => {
             subtitle="From LP positions"
             isDummy={true}
             tooltip="Fees earned from liquidity provision (coming soon)"
-          />
+          /> */}
           <MetricCard
             title="HBAR Price"
             value={hbarPrice ? `$${hbarPrice.priceUSD.toFixed(4)}` : "$0.00"}

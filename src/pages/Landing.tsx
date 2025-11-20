@@ -80,7 +80,6 @@ export default function Landing() {
         "The minimum deposit is 100 HBAR to ensure efficient rebalancing operations. There's no maximum limit—our infrastructure scales to handle portfolios of any size.",
     },
   ];
-  
 
   return (
     <div className="min-h-screen bg-background">
@@ -93,9 +92,11 @@ export default function Landing() {
       >
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-gradient-to-br from-primary to-accent w-10 h-10 rounded-xl flex items-center justify-center">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
+            <img
+              src="/revaultronLogo1.o.png"
+              alt="ReVaultron Logo"
+              className="w-14 h-14"
+            />
             <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               ReVaultron
             </span>
@@ -802,9 +803,11 @@ export default function Landing() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <div className="bg-gradient-to-br from-primary to-accent w-8 h-8 rounded-lg flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-white" />
-                </div>
+                <img
+                  src="/revaultronLogo1.o.png"
+                  alt="ReVaultron Logo"
+                  className="w-14 h-14"
+                />
                 <span className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                   ReVaultron
                 </span>
@@ -821,13 +824,13 @@ export default function Landing() {
                   <Twitter className="h-4 w-4 text-primary" />
                 </a>
                 <a
-                  href="#"
+                  href="https://github.com/revaultron"
                   className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
                 >
                   <Github className="h-4 w-4 text-primary" />
                 </a>
                 <a
-                  href="#"
+                  href="https://revaultron.vercel.app"
                   className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
                 >
                   <Globe className="h-4 w-4 text-primary" />

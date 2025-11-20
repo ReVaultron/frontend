@@ -21,9 +21,9 @@ export const AppRoutes: React.FC = () => {
           <Route path="/vaults" element={<Vaults />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/vault/:id" element={<VaultDetails />} />
+          {/* 404 Route */}
+          <Route path="*" element={<NotFound />} />
         </Route>
-        {/* 404 Route */}
-        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
