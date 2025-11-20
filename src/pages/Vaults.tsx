@@ -1,13 +1,11 @@
+// app/vaults/page.tsx - Complete Implementation
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  useAccount,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-} from "wagmi";
+import { useAccount } from "wagmi";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Activity,
   ArrowUpRight,
@@ -15,25 +13,34 @@ import {
   TrendingUp,
   AlertTriangle,
   Plus,
-  Loader2,
-  CheckCircle2,
-  XCircle,
+  RefreshCw,
+  Settings,
 } from "lucide-react";
 import {
   useUserVaultAddress,
   useUserVaultData,
   useVolatilityIndexData,
 } from "@/hooks/useContracts";
-import {
-  DEFAULT_PRICE_FEED_ID,
-  FACTORY_VAULT_ABI,
-  CONTRACT_ADDRESSES,
-} from "@/lib/contracts/abis";
-import { formatUnits, parseEther } from "viem";
+import { DEFAULT_PRICE_FEED_ID } from "@/lib/contracts/abis";
+import { formatUnits } from "viem";
 import { usePythPrice } from "@/hooks/usePythPrices";
 import { PYTH_PRICE_FEEDS } from "@/lib/pyth/price-feeds";
 import { VaultCreationModal } from "@/components/vault/VaultCreationFlow";
-import { ETH_DECIMALS } from "@/lib/constants";
+import { ETH_DECIMALS, USER_THRESHOLD } from "@/lib/constants";
+
+interface VaultCardData {
+  id: string;
+  name: string;
+  status: "Active" | "Warning" | "Inactive";
+  riskLevel: "Low" | "Moderate" | "High";
+  hbarBalance: string;
+  totalValue: string;
+  tokens: number;
+  lastRebalance: string;
+  volatility: number;
+  threshold: number;
+  address: string;
+}
 
 const Vaults = () => {
   const navigate = useNavigate();
@@ -44,58 +51,52 @@ const Vaults = () => {
   const { vaultAddress, hasVault } = useUserVaultAddress(userAddress);
 
   // Get vault data if exists
-  const vaultData = useUserVaultData(hasVault ? vaultAddress : undefined);
+  const { 
+    hbarBalance, 
+    hbarBalanceRaw, 
+    tokenCount, 
+    tokens,
+    refetchHbarBalance,
+    refetchTokens 
+  } = useUserVaultData(hasVault ? vaultAddress : undefined);
 
   // Get volatility data
-  const { currentVolatility, lastUpdate } = useVolatilityIndexData(
-    DEFAULT_PRICE_FEED_ID
-  );
+  const { 
+    currentVolatility, 
+    lastUpdate,
+    isStale,
+    refetchVolatility 
+  } = useVolatilityIndexData(DEFAULT_PRICE_FEED_ID);
 
+  // Get HBAR price
   const {
     price: hbarPrice,
     isLoading: priceLoading,
     error: priceError,
-    lastUpdate: priceLastUpdate,
   } = usePythPrice({
     priceFeedId: PYTH_PRICE_FEEDS.HBAR_USD,
-    refreshInterval: 60000, // Update every 60 seconds
+    refreshInterval: 60000,
   });
 
+  // Calculate vault value in USD
   const vaultValueUSD = useMemo(() => {
-    if (!hbarPrice || !vaultData.hbarBalanceRaw) return "0.00";
+    if (!hbarPrice || !hbarBalanceRaw) return "0.00";
 
-    const hbarAmount = parseFloat(
-      formatUnits(vaultData.hbarBalanceRaw, ETH_DECIMALS)
-    );
+    const hbarAmount = parseFloat(formatUnits(hbarBalanceRaw, ETH_DECIMALS));
     return (hbarAmount * hbarPrice.priceUSD).toFixed(2);
-  }, [hbarPrice, vaultData.hbarBalanceRaw]);
-
-  // Build vaults array from actual data
-  const vaults =
-    hasVault && vaultAddress
-      ? [
-          {
-            id: vaultAddress,
-            name: "My Vault",
-            status: "Active" as const,
-            riskLevel: getRiskLevel(currentVolatility, 5.0),
-            hbarBalance: vaultData.hbarBalance,
-            totalValue: vaultValueUSD,
-            tokens: vaultData.tokenCount,
-            lastRebalance: getTimeAgo(lastUpdate),
-            volatility: currentVolatility,
-            threshold: 5.0,
-            address: vaultAddress,
-          },
-        ]
-      : [];
+  }, [hbarPrice, hbarBalanceRaw]);
 
   // Helper functions
-  function getRiskLevel(volatility: number, threshold: number) {
+  function getRiskLevel(volatility: number, threshold: number): "Low" | "Moderate" | "High" {
     const ratio = volatility / threshold;
     if (ratio < 0.5) return "Low";
     if (ratio < 0.8) return "Moderate";
     return "High";
+  }
+
+  function getVaultStatus(volatility: number, threshold: number): "Active" | "Warning" | "Inactive" {
+    if (volatility > threshold) return "Warning";
+    return "Active";
   }
 
   function getTimeAgo(timestamp: number): string {
@@ -133,14 +134,50 @@ const Vaults = () => {
     }
   };
 
-  // Calculate stats
-  const totalValue = vaults.reduce(
-    (sum, v) => sum + parseFloat(v.totalValue.replace(/,/g, "") || "0"),
-    0
-  );
-  const activeVaults = vaults.filter((v) => v.status === "Active").length;
-  const needAttention = vaults.filter((v) => v.volatility > v.threshold).length;
+  // Build vault data
+  const vaultData: VaultCardData | null = useMemo(() => {
+    if (!hasVault || !vaultAddress) return null;
 
+    return {
+      id: vaultAddress,
+      name: "My Vault",
+      status: getVaultStatus(currentVolatility, USER_THRESHOLD),
+      riskLevel: getRiskLevel(currentVolatility, USER_THRESHOLD),
+      hbarBalance: hbarBalance,
+      totalValue: vaultValueUSD,
+      tokens: tokenCount,
+      lastRebalance: getTimeAgo(lastUpdate),
+      volatility: currentVolatility,
+      threshold: USER_THRESHOLD,
+      address: vaultAddress,
+    };
+  }, [hasVault, vaultAddress, currentVolatility, hbarBalance, vaultValueUSD, tokenCount, lastUpdate]);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    if (!vaultData) {
+      return {
+        totalValue: 0,
+        activeVaults: 0,
+        needAttention: 0,
+      };
+    }
+
+    return {
+      totalValue: parseFloat(vaultData.totalValue.replace(/,/g, "") || "0"),
+      activeVaults: vaultData.status === "Active" ? 1 : 0,
+      needAttention: vaultData.volatility > vaultData.threshold ? 1 : 0,
+    };
+  }, [vaultData]);
+
+  // Refresh all data
+  const handleRefresh = () => {
+    refetchHbarBalance();
+    refetchTokens();
+    refetchVolatility();
+  };
+
+  // Loading state
   if (!isConnected) {
     return (
       <div className="flex-1 p-6 space-y-6 max-w-[1600px] mx-auto">
@@ -161,6 +198,26 @@ const Vaults = () => {
     );
   }
 
+  // Check if still loading vault data
+  const isLoading = hasVault === undefined;
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 p-6 space-y-6 max-w-[1600px] mx-auto">
+        <div className="space-y-1">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-64" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 p-6 space-y-6 max-w-[1600px] mx-auto">
       {/* Page Header */}
@@ -171,15 +228,25 @@ const Vaults = () => {
             Manage your vaults and monitor their performance
           </p>
         </div>
-        {!hasVault && (
+        <div className="flex items-center gap-2">
           <Button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-gradient-to-r from-primary to-purple-600"
+            variant="outline"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={priceLoading}
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Create New Vault
+            <RefreshCw className={`w-4 h-4 ${priceLoading ? 'animate-spin' : ''}`} />
           </Button>
-        )}
+          {!hasVault && (
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-gradient-to-r from-primary to-purple-600"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create New Vault
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Stats Overview */}
@@ -192,7 +259,7 @@ const Vaults = () => {
             <div>
               <p className="text-sm text-muted-foreground">Total Vaults</p>
               <p className="text-2xl font-bold text-foreground">
-                {vaults.length}
+                {hasVault ? 1 : 0}
               </p>
             </div>
           </div>
@@ -205,8 +272,7 @@ const Vaults = () => {
             <div>
               <p className="text-sm text-muted-foreground">Total Value</p>
               <p className="text-2xl font-bold text-foreground">
-                $
-                {totalValue.toLocaleString(undefined, {
+                ${stats.totalValue.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -222,7 +288,7 @@ const Vaults = () => {
             <div>
               <p className="text-sm text-muted-foreground">Active Vaults</p>
               <p className="text-2xl font-bold text-foreground">
-                {activeVaults}
+                {stats.activeVaults}
               </p>
             </div>
           </div>
@@ -235,129 +301,141 @@ const Vaults = () => {
             <div>
               <p className="text-sm text-muted-foreground">Need Attention</p>
               <p className="text-2xl font-bold text-foreground">
-                {needAttention}
+                {stats.needAttention}
               </p>
             </div>
           </div>
         </Card>
       </div>
 
+      {/* Price Data Status */}
+      {priceError && (
+        <Card className="p-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20">
+          <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-300">
+            <AlertTriangle className="w-5 h-5" />
+            <p className="text-sm font-medium">
+              Unable to fetch price data. Values may be outdated.
+            </p>
+          </div>
+        </Card>
+      )}
+
       {/* Vaults Grid */}
-      {vaults.length > 0 ? (
+      {vaultData ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {vaults.map((vault) => (
-            <Card
-              key={vault.id}
-              className="p-6 hover:border-primary/50 transition-colors"
-            >
-              <div className="space-y-4">
-                {/* Header */}
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-purple-600 rounded-full flex items-center justify-center">
-                      <Activity className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground">
-                        {vault.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {vault.tokens} token{vault.tokens !== 1 ? "s" : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2 items-end">
-                    <Badge className={getStatusColor(vault.status)}>
-                      {vault.status}
-                    </Badge>
-                    <Badge className={getRiskColor(vault.riskLevel)}>
-                      {vault.riskLevel} Risk
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Metrics */}
-                <div className="grid grid-cols-2 gap-4 py-4 border-y border-border">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      HBAR Balance
-                    </p>
-                    <p className="text-lg font-semibold text-foreground">
-                      {vault.hbarBalance} ℏ
-                    </p>
+          <Card className="p-6 hover:border-primary/50 transition-colors">
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-purple-600 rounded-full flex items-center justify-center">
+                    <Activity className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Total Value
-                    </p>
-                    <p className="text-lg font-semibold text-foreground">
-                      ${vault.totalValue}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Volatility
-                    </p>
-                    <p className="text-lg font-semibold text-foreground">
-                      {vault.volatility.toFixed(2)}%
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Last Rebalance
-                    </p>
-                    <p className="text-lg font-semibold text-foreground">
-                      {vault.lastRebalance}
+                    <h3 className="text-lg font-semibold text-foreground">
+                      {vaultData.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {vaultData.tokens} token{vaultData.tokens !== 1 ? "s" : ""}
                     </p>
                   </div>
                 </div>
-
-                {/* Volatility Bar */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">
-                      Volatility vs Threshold
-                    </span>
-                    <span className="text-sm font-medium text-foreground">
-                      {vault.volatility.toFixed(2)}% / {vault.threshold}%
-                    </span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all ${
-                        vault.volatility > vault.threshold
-                          ? "bg-gradient-to-r from-red-500 to-red-600"
-                          : vault.volatility > vault.threshold * 0.8
-                          ? "bg-gradient-to-r from-yellow-500 to-orange-500"
-                          : "bg-gradient-to-r from-green-500 to-green-600"
-                      }`}
-                      style={{
-                        width: `${Math.min(
-                          (vault.volatility / vault.threshold) * 100,
-                          100
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    onClick={() => navigate(`/vault/${vault.address}`)}
-                    className="flex-1"
-                    variant="default"
-                  >
-                    View Details
-                    <ArrowUpRight className="w-4 h-4 ml-2" />
-                  </Button>
-                  <Button variant="outline" className="flex-1">
-                    Manage
-                  </Button>
+                <div className="flex flex-col gap-2 items-end">
+                  <Badge className={getStatusColor(vaultData.status)}>
+                    {vaultData.status}
+                  </Badge>
+                  <Badge className={getRiskColor(vaultData.riskLevel)}>
+                    {vaultData.riskLevel} Risk
+                  </Badge>
                 </div>
               </div>
-            </Card>
-          ))}
+
+              {/* Metrics */}
+              <div className="grid grid-cols-2 gap-4 py-4 border-y border-border">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">HBAR Balance</p>
+                  <p className="text-lg font-semibold text-foreground">
+                    {parseFloat(vaultData.hbarBalance).toFixed(4)} ℏ
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Total Value</p>
+                  <p className="text-lg font-semibold text-foreground">
+                    ${vaultData.totalValue}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Volatility</p>
+                  <p className="text-lg font-semibold text-foreground">
+                    {vaultData.volatility.toFixed(2)}%
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Last Update</p>
+                  <p className="text-lg font-semibold text-foreground">
+                    {vaultData.lastRebalance}
+                  </p>
+                </div>
+              </div>
+
+              {/* Volatility Bar */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">
+                    Volatility vs Threshold
+                  </span>
+                  <span className="text-sm font-medium text-foreground">
+                    {vaultData.volatility.toFixed(2)}% / {vaultData.threshold}%
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all ${
+                      vaultData.volatility > vaultData.threshold
+                        ? "bg-gradient-to-r from-red-500 to-red-600"
+                        : vaultData.volatility > vaultData.threshold * 0.8
+                        ? "bg-gradient-to-r from-yellow-500 to-orange-500"
+                        : "bg-gradient-to-r from-green-500 to-green-600"
+                    }`}
+                    style={{
+                      width: `${Math.min(
+                        (vaultData.volatility / vaultData.threshold) * 100,
+                        100
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Stale Data Warning */}
+              {isStale && (
+                <div className="flex items-center gap-2 text-sm text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>Volatility data may be stale</span>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-2">
+                <Button
+                  onClick={() => navigate(`/vault/${vaultData.address}`)}
+                  className="flex-1"
+                  variant="default"
+                >
+                  View Details
+                  <ArrowUpRight className="w-4 h-4 ml-2" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => navigate(`/vault/${vaultData.address}`)}
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Manage
+                </Button>
+              </div>
+            </div>
+          </Card>
         </div>
       ) : (
         /* Empty State */
@@ -387,8 +465,7 @@ const Vaults = () => {
       {/* Create Vault Modal */}
       <VaultCreationModal
         open={isCreateModalOpen}
-        onOpenChange={() => setIsCreateModalOpen(false)}
-        // onSuccess={handleVaultCreated}
+        onOpenChange={setIsCreateModalOpen}
       />
     </div>
   );
