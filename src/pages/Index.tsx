@@ -1,19 +1,13 @@
-// app/dashboard/page.tsx - Updated with Pyth Prices
-import {
-  DollarSign,
-  TrendingUp,
-  Zap,
-  AlertTriangle,
-  Wallet,
-  Plus,
-} from "lucide-react";
+// app/dashboard/page.tsx - UPDATED with Agent Integration
+import { DollarSign, TrendingUp, Wallet, Plus } from "lucide-react";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { VolatilityMonitor } from "@/components/dashboard/VolatilityMonitor";
 import { ActiveVaults } from "@/components/dashboard/ActiveVaults";
 import { AgentActivityFeed } from "@/components/agents/AgentActivityFeed";
+import { AgentStatusPanel } from "@/components/agents/AgentStatusPanel";
 import { useUserVaultAddress, useUserVaultData } from "@/hooks/useContracts";
-import { usePythPrice, usePythPrices } from "@/hooks/usePythPrices";
+import { usePythPrice } from "@/hooks/usePythPrices";
 import { PYTH_PRICE_FEEDS } from "@/lib/pyth/price-feeds";
 import { useAccount, useBalance } from "wagmi";
 import { useMemo, useState } from "react";
@@ -25,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { VaultCreationModal } from "@/components/vault/VaultCreationFlow";
 import { DEFAULT_PRICE_FEED_ID } from "@/lib/contracts/abis";
 import { USER_THRESHOLD, ETH_DECIMALS } from "@/lib/constants";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
   const { address: userAddress, isConnected } = useAccount();
@@ -47,55 +42,44 @@ const Dashboard = () => {
     lastUpdate: priceLastUpdate,
   } = usePythPrice({
     priceFeedId: PYTH_PRICE_FEEDS.HBAR_USD,
-    refreshInterval: 60000, // Update every 60 seconds
+    refreshInterval: 60000,
   });
 
   // Calculate total deposited in USD
   const totalDeposited = useMemo(() => {
     if (!hasVault || !vaultData.hbarBalanceRaw || !hbarPrice) return "0.00";
-
     const hbarAmount = parseFloat(
       formatUnits(vaultData.hbarBalanceRaw, ETH_DECIMALS)
     );
     const usdValue = hbarAmount * hbarPrice.priceUSD;
-
     return usdValue.toFixed(2);
   }, [hasVault, vaultData.hbarBalanceRaw, hbarPrice]);
 
   // Calculate wallet value in USD
   const walletValueUSD = useMemo(() => {
     if (!walletBalance || !hbarPrice) return "0.00";
-
     const hbarAmount = parseFloat(
       formatUnits(walletBalance.value, ETH_DECIMALS)
     );
     const usdValue = hbarAmount * hbarPrice.priceUSD;
-
     return usdValue.toFixed(2);
   }, [walletBalance, hbarPrice]);
 
-  // Calculate current value (same as deposited for now)
   const currentValue = totalDeposited;
-
-  // Calculate fees earned (dummy for now)
   const feesEarned = "0.00";
 
-  // Calculate percentage changes (dummy - would come from historical data)
   const changes = useMemo(() => {
     const baseChange = parseFloat(totalDeposited) > 0 ? 2.5 : 0;
-
     return {
       deposited: baseChange,
       value: baseChange * 1.1,
       fees: parseFloat(feesEarned) > 0 ? 5.2 : 0,
-      volatility: 0, // Would come from VolatilityIndex
+      volatility: 0,
     };
   }, [totalDeposited, feesEarned]);
 
-  // Loading state
   const isLoading = isConnected && hasVault === undefined;
 
-  // Not connected state
   if (!isConnected) {
     return (
       <div className="flex-1 p-6 space-y-6 max-w-[1600px] mx-auto">
@@ -105,7 +89,6 @@ const Dashboard = () => {
             Connect your wallet to access your vault dashboard
           </p>
         </div>
-
         <Card className="p-12">
           <div className="max-w-md mx-auto text-center space-y-4">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
@@ -122,7 +105,6 @@ const Dashboard = () => {
     );
   }
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="flex-1 p-6 space-y-6 max-w-[1600px] mx-auto">
@@ -139,7 +121,6 @@ const Dashboard = () => {
     );
   }
 
-  // Price error state
   if (priceError) {
     return (
       <div className="flex-1 p-6 space-y-6 max-w-[1600px] mx-auto">
@@ -153,7 +134,6 @@ const Dashboard = () => {
     );
   }
 
-  // No vault state
   if (!hasVault) {
     return (
       <>
@@ -164,7 +144,6 @@ const Dashboard = () => {
               Create your first vault to start managing your portfolio
             </p>
           </div>
-
           <Alert>
             <AlertDescription className="flex items-center justify-between">
               <div>
@@ -179,8 +158,6 @@ const Dashboard = () => {
               </Button>
             </AlertDescription>
           </Alert>
-
-          {/* Show wallet balance with Pyth price */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Your Wallet</h3>
             <div className="grid grid-cols-2 gap-4">
@@ -209,15 +186,10 @@ const Dashboard = () => {
             </div>
           </Card>
         </div>
-        <>
-          {/* Create Vault Modal */}
-          {!hasVault && (
-            <VaultCreationModal
-              open={createVaultOpen}
-              onOpenChange={setCreateVaultOpen}
-            />
-          )}
-        </>
+        <VaultCreationModal
+          open={createVaultOpen}
+          onOpenChange={setCreateVaultOpen}
+        />
       </>
     );
   }
@@ -229,7 +201,8 @@ const Dashboard = () => {
         <div className="space-y-1">
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back! Monitor your positions and manage portfolio risk.
+            Welcome back! Monitor your positions and manage portfolio risk with
+            autonomous agents.
           </p>
           {hbarPrice && priceLastUpdate && (
             <p className="text-xs text-muted-foreground">
@@ -239,8 +212,11 @@ const Dashboard = () => {
           )}
         </div>
 
+        {/* 🆕 Agent Status Panel - Shows agent health */}
+        <AgentStatusPanel />
+
         {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <MetricCard
             title="Total Deposited"
             value={`$${totalDeposited}`}
@@ -263,21 +239,11 @@ const Dashboard = () => {
             isLive={!!hbarPrice}
             tooltip="Current USD value of your portfolio"
           />
-          {/* <MetricCard
-            title="Fees Earned"
-            value={`$${feesEarned}`}
-            change={changes.fees}
-            icon={Zap}
-            iconColor="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300"
-            subtitle="From LP positions"
-            isDummy={true}
-            tooltip="Fees earned from liquidity provision (coming soon)"
-          /> */}
           <MetricCard
             title="HBAR Price"
             value={hbarPrice ? `$${hbarPrice.priceUSD.toFixed(4)}` : "$0.00"}
             change={changes.volatility}
-            icon={AlertTriangle}
+            icon={TrendingUp}
             iconColor="bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300"
             subtitle={
               hbarPrice
@@ -339,7 +305,7 @@ const Dashboard = () => {
           </div>
           {priceLastUpdate && (
             <div className="text-sm text-muted-foreground">
-              Last price update:{" "}
+              Last update:{" "}
               <span className="font-medium text-foreground">
                 {priceLastUpdate.toLocaleTimeString()}
               </span>

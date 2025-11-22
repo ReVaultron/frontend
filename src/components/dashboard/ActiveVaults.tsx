@@ -162,7 +162,7 @@ export function ActiveVaults({ hbarPrice }: ActiveVaultsProps) {
             </div>
             <div>
               <h4 className="text-lg font-semibold text-foreground">
-                Your Vault
+                My Vault
               </h4>
               <p className="text-sm text-muted-foreground">
                 {vaultData.tokenCount} token

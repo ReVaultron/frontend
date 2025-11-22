@@ -1,120 +1,72 @@
-import { useState, useEffect, useRef } from "react";
-import { Activity, Bot, AlertTriangle, Zap, TrendingUp } from "lucide-react";
+// components/agents/AgentActivityFeed.tsx - FIXED VERSION
+import { useEffect, useRef } from "react";
+import { 
+  Activity, 
+  Bot, 
+  AlertTriangle, 
+  Zap, 
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  Clock,
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-
-interface AgentMessage {
-  id: string;
-  agentType: "volatility" | "portfolio" | "risk" | "execution";
-  agentName: string;
-  message: string;
-  timestamp: Date;
-  severity: "info" | "warning" | "success" | "error";
-  data?: Record<string, any>;
-}
+import { 
+  useAgentSystem, 
+  useVolatilityMonitoring, 
+  useRebalanceMonitoring,
+  type AgentActivity 
+} from "@/hooks/useAgentSystem";
 
 const agentConfig = {
-  volatility: {
-    name: "Volatility Oracle",
+  volatilityUpdater: {
+    name: "Volatility Updater",
     icon: TrendingUp,
     color: "hsl(var(--chart-1))",
     bgColor: "bg-chart-1/10",
   },
-  portfolio: {
-    name: "Portfolio Manager",
+  volatilityAdvisor: {
+    name: "Volatility Advisor",
     icon: Bot,
     color: "hsl(var(--chart-2))",
     bgColor: "bg-chart-2/10",
   },
-  risk: {
-    name: "Risk Assessment",
-    icon: AlertTriangle,
+  rebalanceChecker: {
+    name: "Rebalance Checker",
+    icon: Activity,
     color: "hsl(var(--chart-3))",
     bgColor: "bg-chart-3/10",
   },
-  execution: {
-    name: "Execution Agent",
-    icon: Zap,
+  allocationStrategist: {
+    name: "Allocation Strategist",
+    icon: AlertTriangle,
     color: "hsl(var(--chart-4))",
     bgColor: "bg-chart-4/10",
   },
-};
-
-// Mock HCS message generator
-const generateMockMessage = (): AgentMessage => {
-  const agents = ["volatility", "portfolio", "risk", "execution"] as const;
-  const randomAgent = agents[Math.floor(Math.random() * agents.length)];
-
-  const messages: Record<typeof randomAgent, { message: string; severity: AgentMessage["severity"]; data?: any }[]> = {
-    volatility: [
-      { message: "Market volatility detected: 24.3%", severity: "info", data: { volatility: 24.3 } },
-      { message: "Volatility threshold approaching: 28.5%", severity: "warning", data: { volatility: 28.5 } },
-      { message: "High volatility alert: 32.1%", severity: "error", data: { volatility: 32.1 } },
-      { message: "Volatility normalized: 18.2%", severity: "success", data: { volatility: 18.2 } },
-    ],
-    portfolio: [
-      { message: "Analyzing portfolio allocation", severity: "info" },
-      { message: "Rebalancing recommendation generated", severity: "warning" },
-      { message: "Portfolio optimization complete", severity: "success" },
-      { message: "Allocation drift detected: 3.2%", severity: "warning", data: { drift: 3.2 } },
-    ],
-    risk: [
-      { message: "Risk assessment initiated", severity: "info" },
-      { message: "Risk score: Low (2.1/10)", severity: "success", data: { riskScore: 2.1 } },
-      { message: "Risk score: Medium (5.8/10)", severity: "warning", data: { riskScore: 5.8 } },
-      { message: "Risk mitigation approved", severity: "success" },
-    ],
-    execution: [
-      { message: "Swap transaction initiated", severity: "info" },
-      { message: "Executing swap: 250 USDC → 2,083 HBAR", severity: "info", data: { from: "USDC", to: "HBAR" } },
-      { message: "Transaction confirmed on Hedera", severity: "success" },
-      { message: "Rebalancing complete", severity: "success" },
-    ],
-  };
-
-  const agentMessages = messages[randomAgent];
-  const randomMessage = agentMessages[Math.floor(Math.random() * agentMessages.length)];
-
-  return {
-    id: `msg_${Date.now()}_${Math.random()}`,
-    agentType: randomAgent,
-    agentName: agentConfig[randomAgent].name,
-    message: randomMessage.message,
-    timestamp: new Date(),
-    severity: randomMessage.severity,
-    data: randomMessage.data,
-  };
+  rebalanceExecutor: {
+    name: "Rebalance Executor",
+    icon: Zap,
+    color: "hsl(var(--chart-5))",
+    bgColor: "bg-chart-5/10",
+  },
 };
 
 export function AgentActivityFeed() {
-  const [messages, setMessages] = useState<AgentMessage[]>([]);
-  const [isLive, setIsLive] = useState(true);
+  const { activities, allAgentsOnline, agentStatuses } = useAgentSystem();
+  const { latestUpdate, latestRecommendation } = useVolatilityMonitoring();
+  const { rebalanceStatus, allocationStrategy } = useRebalanceMonitoring();
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll to top when new activity arrives
   useEffect(() => {
-    // Add initial messages
-    const initialMessages = Array.from({ length: 5 }, () => generateMockMessage());
-    setMessages(initialMessages.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
-
-    // Simulate real-time HCS messages
-    const interval = setInterval(() => {
-      if (isLive) {
-        const newMessage = generateMockMessage();
-        setMessages((prev) => [newMessage, ...prev].slice(0, 50)); // Keep last 50 messages
-      }
-    }, 5000 + Math.random() * 5000); // Random interval between 5-10 seconds
-
-    return () => clearInterval(interval);
-  }, [isLive]);
-
-  useEffect(() => {
-    // Auto-scroll to top when new message arrives
-    if (scrollRef.current && isLive) {
+    if (scrollRef.current && activities.length > 0) {
       scrollRef.current.scrollTop = 0;
     }
-  }, [messages, isLive]);
+  }, [activities.length]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
@@ -124,18 +76,54 @@ export function AgentActivityFeed() {
     });
   };
 
-  const getSeverityColor = (severity: AgentMessage["severity"]) => {
+  const getSeverityColor = (severity: AgentActivity["severity"]) => {
     switch (severity) {
       case "success":
-        return "bg-success/10 text-success border-success/20";
+        return "bg-green-50 text-green-900 border-green-200 dark:bg-green-900/20 dark:text-green-100 dark:border-green-800";
       case "warning":
-        return "bg-warning/10 text-warning border-warning/20";
+        return "bg-orange-50 text-orange-900 border-orange-200 dark:bg-orange-900/20 dark:text-orange-100 dark:border-orange-800";
       case "error":
-        return "bg-destructive/10 text-destructive border-destructive/20";
+        return "bg-red-50 text-red-900 border-red-200 dark:bg-red-900/20 dark:text-red-100 dark:border-red-800";
       default:
-        return "bg-primary/10 text-primary border-primary/20";
+        return "bg-blue-50 text-blue-900 border-blue-200 dark:bg-blue-900/20 dark:text-blue-100 dark:border-blue-800";
     }
   };
+
+  const getSeverityIcon = (severity: AgentActivity["severity"]) => {
+    switch (severity) {
+      case "success":
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case "error":
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      case "warning":
+        return <AlertTriangle className="h-4 w-4 text-orange-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-blue-600" />;
+    }
+  };
+
+  // Show loading state while agents are starting
+  if (!agentStatuses) {
+    return (
+      <Card className="h-full flex flex-col">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Agent Activity Feed</CardTitle>
+              <CardDescription>Loading agent data...</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1">
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-20" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-full flex flex-col">
@@ -145,69 +133,163 @@ export function AgentActivityFeed() {
             <Activity className="h-5 w-5 text-primary" />
             <div>
               <CardTitle>Agent Activity Feed</CardTitle>
-              <CardDescription>Real-time HCS messages from autonomous agents</CardDescription>
+              <CardDescription>Real-time activity from autonomous agents</CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {isLive && (
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+            {allAgentsOnline ? (
+              <>
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                 <span className="text-xs text-muted-foreground">Live</span>
-              </div>
+              </>
+            ) : (
+              <>
+                <div className="h-2 w-2 rounded-full bg-orange-500" />
+                <span className="text-xs text-muted-foreground">
+                  {agentStatuses.filter(a => a.status === 'online').length}/5 Online
+                </span>
+              </>
             )}
-            <Badge
-              variant="outline"
-              className="cursor-pointer"
-              onClick={() => setIsLive(!isLive)}
-            >
-              {isLive ? "Pause" : "Resume"}
-            </Badge>
           </div>
         </div>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden">
-        <ScrollArea className="h-[500px] pr-4" ref={scrollRef}>
-          <div className="space-y-4">
-            {messages.map((msg) => {
-              const config = agentConfig[msg.agentType];
-              const Icon = config.icon;
+        {/* Current Status Summary - Only show when we have data */}
+        {allAgentsOnline && (latestUpdate || allocationStrategy) && (
+          <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-muted-foreground text-xs mb-1">Latest Volatility</p>
+                <p className="font-semibold">
+                  {latestUpdate?.volatilityBps 
+                    ? `${latestUpdate.volatilityBps} bps` 
+                    : latestRecommendation?.volatilityBps 
+                    ? `${latestRecommendation.volatilityBps} bps (rec)`
+                    : 'Pending...'}
+                </p>
+                {latestUpdate?.txHash && (
+                  <a 
+                    href={`https://hashscan.io/testnet/transaction/${latestUpdate.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline"
+                  >
+                    View TX ↗
+                  </a>
+                )}
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs mb-1">Allocation Strategy</p>
+                <p className="font-semibold">
+                  {allocationStrategy 
+                    ? `${allocationStrategy.hbarAllocation / 100}% HBAR`
+                    : 'Calculating...'}
+                </p>
+                {allocationStrategy && (
+                  <p className="text-xs text-muted-foreground">
+                    Confidence: {(allocationStrategy.confidence * 100).toFixed(0)}%
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
-              return (
-                <div
-                  key={msg.id}
-                  className={cn(
-                    "p-4 rounded-lg border transition-all hover:shadow-md",
-                    getSeverityColor(msg.severity)
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={cn("p-2 rounded-full", config.bgColor)}
-                      style={{ borderColor: config.color }}
-                    >
-                      <Icon className="h-4 w-4" style={{ color: config.color }} />
+        {/* Activity Feed */}
+        <ScrollArea className="h-[400px] pr-4" ref={scrollRef}>
+          {activities.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full py-12 text-center">
+              <Activity className="h-12 w-12 text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">
+                {allAgentsOnline 
+                  ? 'Waiting for agent activity...'
+                  : 'Agents are starting up...'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Activity will appear here automatically
+              </p>
+              {!allAgentsOnline && (
+                <div className="mt-4 space-y-1">
+                  {agentStatuses.map((agent) => (
+                    <div key={agent.type} className="text-xs flex items-center gap-2">
+                      <div className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        agent.status === 'online' ? "bg-green-500" : "bg-gray-400"
+                      )} />
+                      <span className={agent.status === 'online' ? "text-green-600" : "text-muted-foreground"}>
+                        {agent.name}
+                      </span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-semibold text-sm">{msg.agentName}</span>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {formatTime(msg.timestamp)}
-                        </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activities.map((activity) => {
+                const config = agentConfig[activity.agentType];
+                const Icon = config.icon;
+
+                return (
+                  <div
+                    key={activity.id}
+                    className={cn(
+                      "p-4 rounded-lg border transition-all hover:shadow-md",
+                      getSeverityColor(activity.severity)
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={cn("p-2 rounded-full flex-shrink-0", config.bgColor)}
+                        style={{ borderColor: config.color }}
+                      >
+                        <Icon className="h-4 w-4" style={{ color: config.color }} />
                       </div>
-                      <p className="text-sm">{msg.message}</p>
-                      {msg.data && (
-                        <div className="mt-2 p-2 rounded bg-background/50 border">
-                          <pre className="text-xs text-muted-foreground overflow-x-auto">
-                            {JSON.stringify(msg.data, null, 2)}
-                          </pre>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm">{activity.agentName}</span>
+                            {getSeverityIcon(activity.severity)}
+                          </div>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatTime(activity.timestamp)}
+                          </span>
                         </div>
-                      )}
+                        <p className="text-sm mb-1">{activity.message}</p>
+                        
+                        {/* Show reasoning for AI agents */}
+                        {activity.data?.reasoning && (
+                          <div className="mt-2 p-2 rounded bg-background/50 border border-border">
+                            <p className="text-xs text-muted-foreground italic">
+                              "{activity.data.reasoning}"
+                            </p>
+                          </div>
+                        )}
+                        
+                        {/* Show transaction hash */}
+                        {activity.data?.txHash && (
+                          <a
+                            href={`https://hashscan.io/testnet/transaction/${activity.data.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline mt-2 inline-block"
+                          >
+                            View Transaction ↗
+                          </a>
+                        )}
+                        
+                        {activity.action && (
+                          <Badge variant="outline" className="mt-2 text-xs">
+                            {activity.action}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </ScrollArea>
       </CardContent>
     </Card>
